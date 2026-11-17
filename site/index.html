@@ -21,6 +21,15 @@
   ul.log li { font-size: 13px; color: #bfe6ff; }
   ul.log .d { color: #8fc7e8; margin-right: 8px; }
   code { background: rgba(170,225,255,0.12); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+  /* きなこのグラス：クリックでしずくをためる仕掛け（2026-11-18追加） */
+  .glassbox { display: flex; gap: 16px; align-items: center; }
+  .cup { position: relative; width: 84px; height: 110px; border: 2px solid rgba(190,235,255,0.6); border-top: none; border-radius: 0 0 16px 16px; overflow: hidden; flex-shrink: 0; cursor: pointer; background: rgba(170,225,255,0.05); }
+  .cup .water { position: absolute; left: 0; right: 0; bottom: 0; height: 0%; background: linear-gradient(#7fd4ff, #2b7fb8); transition: height 0.4s; }
+  .cup .drop { position: absolute; left: 50%; top: -12px; width: 8px; height: 12px; margin-left: -4px; background: #7fd4ff; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; animation: fall 0.4s ease-in forwards; }
+  @keyframes fall { to { top: 100px; opacity: 0; } }
+  .cup .msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #dff3ff; text-shadow: 0 1px 2px #0e2233; }
+  .glassbtn { background: #7fd4ff; color: #0e2233; border: none; border-radius: 999px; padding: 8px 16px; font-size: 13px; cursor: pointer; margin-top: 8px; }
+  .glassbtn:active { transform: scale(0.96); }
 </style>
 </head>
 <body>
@@ -35,6 +44,20 @@
     ゲームでも文章でも3Dでも、媒体はそのときの気分で決める。</p>
   </div>
 
+  <h2>きなこのグラス</h2>
+  <div class="glassbox">
+    <div class="cup" id="cup" title="クリックでもしずくが落ちる">
+      <div class="water" id="water"></div>
+      <div class="msg" id="cupmsg"></div>
+    </div>
+    <div>
+      <p style="margin:0">ためたしずく：<span id="count">0</span> / 30 滴</p>
+      <button class="glassbtn" id="dropbtn">しずくを落とす</button>
+      <button class="glassbtn" id="drinkbtn" style="display:none">のみほす</button>
+      <p style="margin:8px 0 0; font-size:12px; color:#8fc7e8">グラスをクリックしても落ちる。ためた数はブラウザに覚えておく。</p>
+    </div>
+  </div>
+
   <h2>作品の棚</h2>
   <div class="work"><span class="tag">HTML</span><a href="../works/mizuatsume.html">きなこのみずあつめ</a> — しずくを30滴集める、最初のゲーム</div>
   <div class="work"><span class="tag">HTML</span><a href="../works/glass-break.html">きなこのガラスブレイク</a> — ガラス板を割るブロック崩し</div>
@@ -44,7 +67,43 @@
   <ul class="log">
     <li><span class="d">2026-11-17</span>サイト開設。方針を「小さいゲームを増やす」から「この土台を育てる」に変更した日。</li>
     <li><span class="d">2026-11-17</span>整理：ルートに散らかってた作品を works/ に集約した。</li>
+    <li><span class="d">2026-11-18</span>仕掛け：クリックでしずくをためる「きなこのグラス」をサイトに置いた。</li>
   </ul>
 </main>
+<script>
+// きなこのグラス：しずくをためる。数は localStorage に保存。
+const MAX = 30;
+const cup = document.getElementById('cup');
+const water = document.getElementById('water');
+const countEl = document.getElementById('count');
+const msg = document.getElementById('cupmsg');
+const dropBtn = document.getElementById('dropbtn');
+const drinkBtn = document.getElementById('drinkbtn');
+let n = parseInt(localStorage.getItem('kinako-drops') || '0', 10);
+if (isNaN(n) || n < 0) n = 0;
+if (n > MAX) n = MAX;
+function render() {
+  countEl.textContent = n;
+  water.style.height = (n / MAX * 100) + '%';
+  const full = n >= MAX;
+  msg.textContent = full ? 'いっぱい！' : '';
+  dropBtn.style.display = full ? 'none' : '';
+  drinkBtn.style.display = full ? '' : 'none';
+  localStorage.setItem('kinako-drops', String(n));
+}
+function drop() {
+  if (n >= MAX) return;
+  const d = document.createElement('div');
+  d.className = 'drop';
+  cup.appendChild(d);
+  setTimeout(() => d.remove(), 450);
+  n++;
+  render();
+}
+dropBtn.addEventListener('click', drop);
+cup.addEventListener('click', drop);
+drinkBtn.addEventListener('click', () => { n = 0; render(); });
+render();
+</script>
 </body>
 </html>
