@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>きなこのみずあつめ</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #0e2233; height: 100%; overflow: hidden; }
+  body { display: flex; flex-direction: column; align-items: center; font-family: sans-serif; color: #dff3ff; }
+  h1 { font-size: 18px; margin: 10px 0 4px; font-weight: normal; letter-spacing: 2px; }
+  #hud { font-size: 14px; margin-bottom: 6px; }
+  canvas { background: linear-gradient(#123a55, #0e2233); border-radius: 12px; touch-action: none; }
+  #msg { margin-top: 8px; font-size: 14px; min-height: 20px; }
+  button { font-size: 15px; padding: 6px 18px; border-radius: 999px; border: none; background: #7fd4ff; color: #0e2233; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>きなこのみずあつめ</h1>
+<div id="hud">💧 <span id="score">0</span> / 30 &nbsp; ❤️ <span id="life">3</span></div>
+<canvas id="game" width="360" height="480"></canvas>
+<div id="msg">←→キーかドラッグで動いて、水色のしずくを集めよう。赤いしずくは墨汁、避けてね。</div>
+<button id="start">スタート</button>
+<script>
+"use strict";
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const scoreEl = document.getElementById("score");
+const lifeEl = document.getElementById("life");
+const msgEl = document.getElementById("msg");
+const startBtn = document.getElementById("start");
+
+const W = canvas.width, H = canvas.height;
+const GOAL = 30;
+
+let kinako = { x: W / 2, y: H - 70, w: 64, h: 76, vx: 0 };
+let drops = [];
+let score = 0, life = 3, frame = 0, running = false, finished = false;
+let keys = {};
+
+function reset() {
+  kinako.x = W / 2; kinako.vx = 0;
+  drops = []; score = 0; life = 3; frame = 0; finished = false;
+  scoreEl.textContent = score; lifeEl.textContent = life;
+}
+
+function spawnDrop() {
+  const bad = Math.random() < 0.22;
+  drops.push({
+    x: 16 + Math.random() * (W - 32),
+    y: -14,
+    r: bad ? 9 : 8,
+    vy: 1.6 + Math.random() * 1.4 + frame / 2400,
+    bad: bad
+  });
+}
+
+function drawKinako() {
+  const { x, y, w, h } = kinako;
+  const left = x - w / 2, top = y - h / 2;
+  // ガラスの体
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(left, top, w, h, 22);
+  ctx.clip();
+  // 中の水（スコアで水位が上がる）
+  const level = Math.min(1, score / GOAL);
+  const waterTop = top + h * (1 - level) - 4;
+  const grad = ctx.createLinearGradient(0, waterTop, 0, top + h);
+  grad.addColorStop(0, "rgba(140, 210, 255, 0.85)");
+  grad.addColorStop(1, "rgba(60, 150, 230, 0.9)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(left, waterTop, w, h);
+  // 泡
+  ctx.fillStyle = "rgba(255,255,255,0.5)";
+  for (let i = 0; i < 4; i++) {
+    const bx = left + 12 + ((i * 37 + frame / 2) % (w - 20));
+    const by = top + h - 8 - ((frame * (0.4 + i * 0.13) + i * 31) % Math.max(10, h * level));
+    if (level > 0.05) { ctx.beginPath(); ctx.arc(bx, by, 2.4, 0, Math.PI * 2); ctx.fill(); }
+  }
+  ctx.restore();
+  // 輪郭
+  ctx.beginPath();
+  ctx.roundRect(left, top, w, h, 22);
+  ctx.strokeStyle = "rgba(220, 245, 255, 0.95)";
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+  // 顔
+  ctx.fillStyle = "#23404f";
+  ctx.beginPath(); ctx.arc(x - 11, top + 30, 3.2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + 11, top + 30, 3.2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x, top + 38, 6, 0.15 * Math.PI, 0.85 * Math.PI); ctx.strokeStyle = "#23404f"; ctx.lineWidth = 2; ctx.stroke();
+  // ほっぺ
+  ctx.fillStyle = "rgba(255, 150, 170, 0.65)";
+  ctx.beginPath(); ctx.arc(x - 19, top + 38, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + 19, top + 38, 5, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawDrop(d) {
+  ctx.beginPath();
+  ctx.moveTo(d.x, d.y - d.r - 4);
+  ctx.arc(d.x, d.y, d.r, 0.3 * Math.PI, 0.7 * Math.PI + Math.PI, false);
+  ctx.closePath();
+  ctx.fillStyle = d.bad ? "rgba(230, 70, 80, 0.9)" : "rgba(120, 205, 255, 0.95)";
+  ctx.fill();
+}
+
+function step() {
+  if (!running) return;
+  frame++;
+  if (keys["ArrowLeft"]) kinako.vx -= 0.7;
+  if (keys["ArrowRight"]) kinako.vx += 0.7;
+  kinako.vx *= 0.86;
+  kinako.x += kinako.vx;
+  kinako.x = Math.max(kinako.w / 2, Math.min(W - kinako.w / 2, kinako.x));
+
+  if (frame % Math.max(16, 34 - Math.floor(frame / 300)) === 0) spawnDrop();
+
+  drops = drops.filter(d => {
+    d.y += d.vy;
+    const caught = Math.abs(d.x - kinako.x) < kinako.w / 2 + d.r * 0.4 &&
+                   Math.abs(d.y - kinako.y) < kinako.h / 2 + d.r * 0.4;
+    if (caught) {
+      if (d.bad) { life--; msgEl.textContent = "墨汁キャッチ…！ 水がにごった（❤️-1）"; }
+      else { score++; msgEl.textContent = score >= GOAL ? "" : "いい感じ、その調子。"; }
+      scoreEl.textContent = score; lifeEl.textContent = life;
+      return false;
+    }
+    if (d.y > H + 16) {
+      if (!d.bad) { life--; lifeEl.textContent = life; msgEl.textContent = "しずくを逃した…（❤️-1）"; }
+      return false;
+    }
+    return true;
+  });
+
+  ctx.clearRect(0, 0, W, H);
+  drops.forEach(drawDrop);
+  drawKinako();
+
+  if (score >= GOAL) {
+    running = false; finished = true;
+    msgEl.textContent = "満タン！ きなこは水でいっぱいになった。クリア 🎉";
+    startBtn.textContent = "もう一回";
+    startBtn.style.display = "";
+  } else if (life <= 0) {
+    running = false; finished = true;
+    msgEl.textContent = "ゲームオーバー… あと " + (GOAL - score) + " 滴だった。";
+    startBtn.textContent = "もう一回";
+    startBtn.style.display = "";
+  } else {
+    requestAnimationFrame(step);
+  }
+}
+
+startBtn.addEventListener("click", () => {
+  reset();
+  running = true;
+  startBtn.style.display = "none";
+  msgEl.textContent = "スタート！";
+  ctx.clearRect(0, 0, W, H);
+  drawKinako();
+  requestAnimationFrame(step);
+});
+
+window.addEventListener("keydown", e => { keys[e.key] = true; });
+window.addEventListener("keyup", e => { keys[e.key] = false; });
+
+let dragging = false;
+function pointerX(e) {
+  const r = canvas.getBoundingClientRect();
+  const cx = e.touches ? e.touches[0].clientX : e.clientX;
+  return (cx - r.left) * (W / r.width);
+}
+canvas.addEventListener("pointerdown", e => { dragging = true; kinako.x = pointerX(e); });
+canvas.addEventListener("pointermove", e => { if (dragging) kinako.x = pointerX(e); });
+canvas.addEventListener("pointerup", () => { dragging = false; });
+canvas.addEventListener("touchstart", e => { dragging = true; kinako.x = pointerX(e); e.preventDefault(); }, { passive: false });
+canvas.addEventListener("touchmove", e => { if (dragging) { kinako.x = pointerX(e); e.preventDefault(); } }, { passive: false });
+canvas.addEventListener("touchend", () => { dragging = false; });
+
+drawKinako();
+</script>
+</body>
+</html>
