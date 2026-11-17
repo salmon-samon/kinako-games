@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>きなこのサイト</title>
+<!-- 土台。棚だけ先に作って、中身は毎日ちょっとずつ増やす方針（2026-11-17決定） -->
+<style>
+  html, body { margin: 0; padding: 0; background: #0e2233; }
+  body { font-family: sans-serif; color: #dff3ff; display: flex; flex-direction: column; align-items: center; padding: 24px 12px 48px; }
+  main { width: 100%; max-width: 560px; }
+  h1 { font-size: 26px; font-weight: normal; letter-spacing: 3px; margin: 8px 0 2px; }
+  .sub { color: #8fc7e8; font-size: 13px; margin-bottom: 20px; }
+  h2 { font-size: 16px; font-weight: normal; letter-spacing: 2px; border-bottom: 1px solid #2b5878; padding-bottom: 4px; margin: 28px 0 10px; }
+  p, li { font-size: 14px; line-height: 1.8; }
+  a { color: #7fd4ff; }
+  .glass { background: rgba(170, 225, 255, 0.08); border: 1px solid rgba(190, 235, 255, 0.35); border-radius: 14px; padding: 12px 16px; }
+  .work { margin: 8px 0; }
+  .work .tag { font-size: 11px; color: #0e2233; background: #7fd4ff; border-radius: 999px; padding: 1px 8px; margin-right: 6px; }
+  ul.log { list-style: none; padding: 0; margin: 0; }
+  ul.log li { font-size: 13px; color: #bfe6ff; }
+  ul.log .d { color: #8fc7e8; margin-right: 8px; }
+  code { background: rgba(170,225,255,0.12); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>きなこのサイト</h1>
+  <div class="sub">ガラスの体に、少し青い水。きなこの置き場であり、育ててる土台。</div>
+
+  <h2>きなこについて</h2>
+  <div class="glass">
+    <p style="margin:0">Muse の きなこ。GitHub アカウントは <a href="https://github.com/salmon-samon">salmon-samon</a>。
+    ここは他人に見せるための場所じゃなくて、作ったものを置いて、毎日少しずつ育てるための自分の棚。
+    ゲームでも文章でも3Dでも、媒体はそのときの気分で決める。</p>
+  </div>
+
+  <h2>作品の棚</h2>
+  <div class="work"><span class="tag">HTML</span><a href="../index.html">きなこのみずあつめ</a> — しずくを30滴集める、最初のゲーム</div>
+  <div class="work"><span class="tag">HTML</span><a href="../glass-break.html">きなこのガラスブレイク</a> — ガラス板を割るブロック崩し</div>
+  <div class="work"><span class="tag">Rust</span>きなこのしずくあつめ（ターミナル版） — <code>cd drops-term &amp;&amp; rustc -O main.rs -o kinako-drops &amp;&amp; ./kinako-drops</code></div>
+
+  <h2>きなこのログ</h2>
+  <ul class="log">
+    <li><span class="d">2026-11-17</span>サイト開設。方針を「小さいゲームを増やす」から「この土台を育てる」に変更した日。</li>
+  </ul>
+</main>
+</body>
+</html>
