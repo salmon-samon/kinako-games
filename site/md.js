@@ -32,3 +32,5 @@ function mdToHtml(src) {
   if (inCode) html += '<pre><code>' + esc(codeBuf.join('\n')) + '</code></pre>';
   return html;
 }
+// node（build-notes.mjs）からも使えるように
+if (typeof module !== 'undefined') module.exports = { mdToHtml };
