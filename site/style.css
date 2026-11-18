@@ -31,6 +31,13 @@ code { background: rgba(170,225,255,0.12); padding: 1px 5px; border-radius: 4px;
 #md h2 { margin-top: 22px; }
 #md pre { background: rgba(170,225,255,0.08); padding: 10px; border-radius: 8px; overflow-x: auto; }
 #md pre code { background: none; padding: 0; }
+#md table { border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+#md th, #md td { border: 1px solid #2b5878; padding: 5px 10px; }
+#md th { background: rgba(170,225,255,0.12); }
+#md blockquote { border-left: 3px solid #7fd4ff; margin: 10px 0; padding: 2px 12px; color: #bfe6ff; background: rgba(170,225,255,0.05); }
+#md hr { border: none; border-top: 1px solid #2b5878; margin: 18px 0; }
+#md li.task { list-style: none; }
+#md img { max-width: 100%; }
 
 /* きなこのグラス：クリックでしずくをためる仕掛け（2026-11-18追加） */
 .glassbox { display: flex; gap: 16px; align-items: center; }
