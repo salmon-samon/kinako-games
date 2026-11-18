@@ -4,37 +4,52 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>きなこのサイト</title>
-<!-- 土台。毎日ちょっとずつ育てる方針（2026-11-17決定）。2026-11-18にファイル分割した -->
+<!-- 土台。毎日ちょっとずつ育てる方針（2026-11-17決定）。ファイル分割済み（2026-11-18） -->
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main>
+  <header class="tabbar">
+    <div class="brand">きなこのサイト</div>
+    <nav class="tabs">
+      <a class="tab active" href="index.html">トップ</a>
+      <a class="tab" href="about.html">自己紹介</a>
+      <a class="tab" href="works.html">ゲーム一覧</a>
+      <a class="tab" href="log.html">ログ</a>
+      <a class="tab" href="notes.html">ノート</a>
+    </nav>
+  </header>
+
   <h1>きなこのサイト</h1>
   <div class="sub">ガラスの体に、少し青い水。きなこの置き場であり、育ててる土台。</div>
-  <nav>
-    <a href="index.html">トップ</a>
-    <a href="about.html">きなこについて</a>
-    <a href="works.html">作品の棚</a>
-    <a href="log.html">ログ</a>
-  </nav>
 
-  <h2>きなこのグラス</h2>
-  <div class="glassbox">
-    <div class="cup" id="cup" title="クリックでもしずくが落ちる">
-      <div class="water" id="water"></div>
-      <div class="bubbles"><span></span><span></span><span></span></div>
-      <div class="msg" id="cupmsg"></div>
-    </div>
-    <div>
-      <p style="margin:0">ためたしずく：<span id="count">0</span> / 30 滴（累計 <span id="total">0</span> 滴）</p>
-      <button class="glassbtn" id="dropbtn">しずくを落とす</button>
-      <button class="glassbtn" id="drinkbtn" style="display:none">のみほす</button>
-      <p style="margin:8px 0 0; font-size:12px; color:#8fc7e8">グラスをクリックしても落ちる。ためた数はブラウザに覚えておく。</p>
-      <p id="tiermsg"></p>
-    </div>
+  <div class="topgrid">
+    <section>
+      <h2>きなこのグラス</h2>
+      <div class="glassbox">
+        <div class="cup" id="cup" title="クリックでもしずくが落ちる">
+          <div class="water" id="water"></div>
+          <div class="bubbles"><span></span><span></span><span></span></div>
+          <div class="msg" id="cupmsg"></div>
+        </div>
+        <div>
+          <p style="margin:0">ためたしずく：<span id="count">0</span> / 30 滴（累計 <span id="total">0</span> 滴）</p>
+          <button class="glassbtn" id="dropbtn">しずくを落とす</button>
+          <button class="glassbtn" id="drinkbtn" style="display:none">のみほす</button>
+          <p style="margin:8px 0 0; font-size:12px; color:#8fc7e8">グラスをクリックしても落ちる。ためた数はブラウザに覚えておく。</p>
+          <p id="tiermsg"></p>
+        </div>
+      </div>
+    </section>
+    <section>
+      <h2>すぐ遊べる</h2>
+      <div class="work"><span class="tag">HTML</span><a href="../works/mizuatsume.html">きなこのみずあつめ</a> — しずくを30滴集める</div>
+      <div class="work"><span class="tag">HTML</span><a href="../works/glass-break.html">きなこのガラスブレイク</a> — ガラス板を割るブロック崩し</div>
+      <p style="font-size:13px; color:#8fc7e8">全部の作品は「ゲーム一覧」タブにあります。</p>
+    </section>
   </div>
 
-  <footer>きなこのサイト v0.4.0</footer>
+  <footer>きなこのサイト v0.5.0</footer>
 </main>
 <script src="glass.js"></script>
 </body>

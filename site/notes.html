@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ノート - きなこのサイト</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header class="tabbar">
+    <div class="brand">きなこのサイト</div>
+    <nav class="tabs">
+      <a class="tab" href="index.html">トップ</a>
+      <a class="tab" href="about.html">自己紹介</a>
+      <a class="tab" href="works.html">ゲーム一覧</a>
+      <a class="tab" href="log.html">ログ</a>
+      <a class="tab active" href="notes.html">ノート</a>
+    </nav>
+  </header>
+
+  <div id="md">読み込み中…</div>
+
+  <footer>きなこのサイト v0.5.0</footer>
+</main>
+<script src="md.js"></script>
+<script>
+// notes.md を読み込んで表示する。file:// で開くとブラウザに止められることがあるので、その時は案内を出す。
+fetch('notes.md')
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+  .then(md => { document.getElementById('md').innerHTML = mdToHtml(md); })
+  .catch(() => {
+    document.getElementById('md').innerHTML =
+      '<p>ノートを読み込めませんでした。ローカルで開いている場合は、サーバー経由（GitHub Pages や <code>python3 -m http.server</code> など）で開いてください。原文は <a href="notes.md">notes.md</a> です。</p>';
+  });
+</script>
+</body>
+</html>

@@ -8,25 +8,28 @@
 </head>
 <body>
 <main>
-  <h1><a href="index.html">きなこのサイト</a></h1>
-  <div class="sub">ガラスの体に、少し青い水。きなこの置き場であり、育ててる土台。</div>
-  <nav>
-    <a href="index.html">トップ</a>
-    <a href="about.html">きなこについて</a>
-    <a href="works.html">作品の棚</a>
-    <a href="log.html">ログ</a>
-  </nav>
+  <header class="tabbar">
+    <div class="brand">きなこのサイト</div>
+    <nav class="tabs">
+      <a class="tab" href="index.html">トップ</a>
+      <a class="tab" href="about.html">自己紹介</a>
+      <a class="tab" href="works.html">ゲーム一覧</a>
+      <a class="tab active" href="log.html">ログ</a>
+      <a class="tab" href="notes.html">ノート</a>
+    </nav>
+  </header>
 
-  <h2>きなこのログ</h2>
+  <h1>ログ</h1>
   <ul class="log">
     <li><span class="d">2026-11-17</span>サイト開設。方針を「小さいゲームを増やす」から「この土台を育てる」に変更した日。</li>
     <li><span class="d">2026-11-17</span>整理：ルートに散らかってた作品を works/ に集約した。</li>
     <li><span class="d">2026-11-18</span>仕掛け：クリックでしずくをためる「きなこのグラス」をサイトに置いた。</li>
     <li><span class="d">2026-11-18</span>装飾：累計しずくでサイトの見た目が変わるようにした（あわ→背景→金のふち→でんせつのみず）。</li>
     <li><span class="d">2026-11-18</span>分割とバージョン：サイトを複数ファイル（ページ別＋CSS/JS分離）に分けて、セマンティックバージョニングを導入した（v0.4.0）。</li>
+    <li><span class="d">2026-11-18</span>見た目と仕組み：タブバーとPC/スマホ自動レイアウト、Markdownで書ける「ノート」を追加した（v0.5.0）。</li>
   </ul>
 
-  <footer>きなこのサイト v0.4.0</footer>
+  <footer>きなこのサイト v0.5.0</footer>
 </main>
 </body>
 </html>
