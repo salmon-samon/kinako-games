@@ -30,6 +30,19 @@
   .cup .msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #dff3ff; text-shadow: 0 1px 2px #0e2233; }
   .glassbtn { background: #7fd4ff; color: #0e2233; border: none; border-radius: 999px; padding: 8px 16px; font-size: 13px; cursor: pointer; margin-top: 8px; }
   .glassbtn:active { transform: scale(0.96); }
+  /* 累計装飾（2026-11-18追加）: 累計しずくの段階で見た目が変わる。tier は body のクラス */
+  .cup .bubbles { position: absolute; inset: 0; display: none; overflow: hidden; }
+  body.tier1 .cup .bubbles, body.tier2 .cup .bubbles, body.tier3 .cup .bubbles, body.tier4 .cup .bubbles { display: block; }
+  .cup .bubbles span { position: absolute; bottom: 4px; width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5); animation: rise 2.6s linear infinite; }
+  .cup .bubbles span:nth-child(1) { left: 20%; animation-delay: 0s; }
+  .cup .bubbles span:nth-child(2) { left: 50%; animation-delay: 0.9s; width: 4px; height: 4px; }
+  .cup .bubbles span:nth-child(3) { left: 75%; animation-delay: 1.7s; width: 5px; height: 5px; }
+  @keyframes rise { from { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } to { transform: translateY(-70px); opacity: 0; } }
+  body.tier2, body.tier3 { background: #0a1a2e; }
+  body.tier3 .cup, body.tier4 .cup { border-color: rgba(255,215,120,0.85); box-shadow: 0 0 12px rgba(255,215,120,0.35); }
+  body.tier4 { background: linear-gradient(160deg, #0a1a2e, #123a55 55%, #2b5878); }
+  body.tier4 h1 { color: #ffe9a8; }
+  #tiermsg { font-size: 12px; color: #8fc7e8; margin: 8px 0 0; }
 </style>
 </head>
 <body>
@@ -48,13 +61,15 @@
   <div class="glassbox">
     <div class="cup" id="cup" title="クリックでもしずくが落ちる">
       <div class="water" id="water"></div>
+      <div class="bubbles"><span></span><span></span><span></span></div>
       <div class="msg" id="cupmsg"></div>
     </div>
     <div>
-      <p style="margin:0">ためたしずく：<span id="count">0</span> / 30 滴</p>
+      <p style="margin:0">ためたしずく：<span id="count">0</span> / 30 滴（累計 <span id="total">0</span> 滴）</p>
       <button class="glassbtn" id="dropbtn">しずくを落とす</button>
       <button class="glassbtn" id="drinkbtn" style="display:none">のみほす</button>
       <p style="margin:8px 0 0; font-size:12px; color:#8fc7e8">グラスをクリックしても落ちる。ためた数はブラウザに覚えておく。</p>
+      <p id="tiermsg"></p>
     </div>
   </div>
 
@@ -68,28 +83,46 @@
     <li><span class="d">2026-11-17</span>サイト開設。方針を「小さいゲームを増やす」から「この土台を育てる」に変更した日。</li>
     <li><span class="d">2026-11-17</span>整理：ルートに散らかってた作品を works/ に集約した。</li>
     <li><span class="d">2026-11-18</span>仕掛け：クリックでしずくをためる「きなこのグラス」をサイトに置いた。</li>
+    <li><span class="d">2026-11-18</span>装飾：累計しずくでサイトの見た目が変わるようにした（あわ→背景→金のふち→でんせつのみず）。</li>
   </ul>
 </main>
 <script>
 // きなこのグラス：しずくをためる。数は localStorage に保存。
+// 累計（のみほしても減らない）に応じてサイトの装飾が変わる（2026-11-18追加）。
 const MAX = 30;
+const THRESHOLDS = [10, 30, 60, 100]; // この累計で tier が上がる
 const cup = document.getElementById('cup');
 const water = document.getElementById('water');
 const countEl = document.getElementById('count');
+const totalEl = document.getElementById('total');
+const tierMsg = document.getElementById('tiermsg');
 const msg = document.getElementById('cupmsg');
 const dropBtn = document.getElementById('dropbtn');
 const drinkBtn = document.getElementById('drinkbtn');
 let n = parseInt(localStorage.getItem('kinako-drops') || '0', 10);
 if (isNaN(n) || n < 0) n = 0;
 if (n > MAX) n = MAX;
+let total = parseInt(localStorage.getItem('kinako-drops-total') || '0', 10);
+if (isNaN(total) || total < 0) total = 0;
+function tier() {
+  return THRESHOLDS.filter(th => total >= th).length;
+}
 function render() {
   countEl.textContent = n;
+  totalEl.textContent = total;
   water.style.height = (n / MAX * 100) + '%';
   const full = n >= MAX;
   msg.textContent = full ? 'いっぱい！' : '';
   dropBtn.style.display = full ? 'none' : '';
   drinkBtn.style.display = full ? '' : 'none';
+  const t = tier();
+  document.body.className = t > 0 ? 'tier' + t : '';
+  const next = THRESHOLDS[t];
+  tierMsg.textContent = next === undefined
+    ? '装飾ぜんぶそろった。でんせつのみず。'
+    : '次の装飾まで あと ' + (next - total) + ' 滴';
   localStorage.setItem('kinako-drops', String(n));
+  localStorage.setItem('kinako-drops-total', String(total));
 }
 function drop() {
   if (n >= MAX) return;
@@ -98,6 +131,7 @@ function drop() {
   cup.appendChild(d);
   setTimeout(() => d.remove(), 450);
   n++;
+  total++;
   render();
 }
 dropBtn.addEventListener('click', drop);
