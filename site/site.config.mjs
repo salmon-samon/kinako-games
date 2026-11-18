@@ -3,7 +3,7 @@
 // build-site.mjs が全ページのタブバー／フッター／head に配る。
 // ページを増やすときも、まずここに1行足してから build する。
 
-export const VERSION = '1.0.0';
+export const VERSION = '1.1.0';
 
 export const SITE_NAME = 'きなこのサイト';
 
@@ -19,3 +19,14 @@ export const PAGES = [
 
 // フッターに出す一文（バージョンは VERSION から自動で付く）
 export const FOOTER_NOTE = '';
+
+// ===== 拡張パック（v1.1.0で導入） =====
+// パックは site/packs/<id>/ に置く。有効化はここの ENABLED_PACKS だけが決める。
+// build-site.mjs は、有効なパックのタブだけをタブバーに足し、
+// providesNewTab なパックがあるときだけ「＋ 新規タブ」ボタンと
+// パックの CSS/JS を各ページに配る。無効なパックのものは HTML に一切出ない。
+export const ENABLED_PACKS = ['terminal'];
+
+export const PACK_PAGES = [
+  { pack: 'terminal', file: 'packs/terminal/terminal.html', label: 'ターミナル', title: 'ターミナル - きなこのサイト', desc: 'きなこのサイトの拡張パック「ターミナル」。サイト内をコマンドで操作できる。', providesNewTab: true },
+];

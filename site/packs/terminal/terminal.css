@@ -1,0 +1,15 @@
+/* 拡張パック「ターミナル」の画面スタイル。ターミナルとビューワーだけが読む。
+   重くしない方針: ぼかし・影は使わず、色と border と等幅フォントで雰囲気を出す。 */
+.terminal { background: var(--bg-deep); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
+.term-out { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; min-height: 260px; max-height: 52vh; overflow-y: auto; color: var(--ink-soft); }
+.term-out .cmd { color: var(--ink); }
+.term-out .dim { color: var(--muted); }
+.term-out .ok { color: var(--accent); }
+.term-line { display: flex; gap: 8px; align-items: center; margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+.term-prompt { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; color: var(--accent); white-space: nowrap; }
+.term-in { flex: 1; background: transparent; border: none; color: var(--ink); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; padding: 6px 2px; min-width: 0; }
+.term-in:focus { outline: none; }
+.term-run { background: var(--accent); color: var(--bg); border: none; border-radius: 999px; padding: 7px 14px; font-size: 13px; cursor: pointer; font-family: inherit; }
+.pack-head { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+.memo-area { width: 100%; min-height: 240px; background: var(--bg-deep); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; font-size: 14px; line-height: 1.8; font-family: inherit; box-sizing: border-box; }
+.danger { background: var(--glass-bg); color: var(--ink-soft); border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; font-size: 13px; cursor: pointer; font-family: inherit; margin-top: 10px; }

@@ -6,7 +6,11 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import vm from 'node:vm';
-import { VERSION, SITE_NAME, PAGES } from './site.config.mjs';
+import { VERSION, SITE_NAME, PAGES, ENABLED_PACKS, PACK_PAGES } from './site.config.mjs';
+
+const ACTIVE_PACK_PAGES = (PACK_PAGES || []).filter(p => (ENABLED_PACKS || []).includes(p.pack));
+const HAS_NEW_TAB = ACTIVE_PACK_PAGES.some(p => p.providesNewTab);
+const EXPECTED_TABS = PAGES.length + ACTIVE_PACK_PAGES.length;
 
 const siteDir = fileURLToPath(new URL('.', import.meta.url));
 
@@ -42,7 +46,15 @@ for (const page of PAGES) {
   const anchors = html.match(/<a\b[^>]*>/g) || [];
   const tabs = anchors.filter(t => hasClass(t, 'tab'));
   const actives = tabs.filter(t => hasClass(t, 'active'));
-  check(`タブ総数: ${page.file}`, tabs.length === PAGES.length, `tabs=${tabs.length} pages=${PAGES.length}`);
+  check(`タブ総数: ${page.file}`, tabs.length === EXPECTED_TABS, `tabs=${tabs.length} expected=${EXPECTED_TABS}`);
+  // 拡張パック: 有効なときだけ新規タブボタンとパックの CSS/JS が入る。無効なら痕跡なし
+  if (HAS_NEW_TAB) {
+    check(`新規タブボタン: ${page.file}`, html.includes('id="pack-new-tab-btn"'));
+    check(`パックCSS: ${page.file}`, html.includes('href="packs/terminal/new-tab.css"'));
+    check(`パックJS: ${page.file}`, html.includes('src="packs/terminal/new-tab.js"'));
+  } else {
+    check(`パック痕跡なし: ${page.file}`, !html.includes('pack-new-tab-btn') && !html.includes('packs/terminal/'));
+  }
   check(`activeタブは1つ: ${page.file}`, actives.length === 1, `actives=${actives.length}`);
   if (actives.length === 1) {
     check(`activeタブのhref: ${page.file}`, attr(actives[0], 'href') === page.file, `href=${attr(actives[0], 'href')}`);
@@ -176,6 +188,92 @@ try {
   check('glass: のみほしても累計は減らない', String(els.total.textContent) === '30', `total=${els.total.textContent}`);
 } catch (e) {
   check('glass.js: スタブ動作確認', false, String(e && e.stack || e));
+}
+
+// ===== 9: 拡張パック「ターミナル」 =====
+const packDir = resolve(siteDir, 'packs/terminal');
+try {
+  const manifest = JSON.parse(readFileSync(resolve(packDir, 'pack.json'), 'utf8'));
+  check('pack: manifest の id', manifest.id === 'terminal');
+  check('pack: manifest が新規タブを提供', !!(manifest.provides && manifest.provides.newTabButton));
+} catch (e) {
+  check('pack: pack.json が読める', false, String(e && e.message || e));
+}
+for (const js of ['new-tab.js', 'terminal.js', 'viewer.js']) {
+  try {
+    execFileSync(process.execPath, ['--check', resolve(packDir, js)], { stdio: 'pipe' });
+    check(`pack: ${js} 構文チェック`, true);
+  } catch (e) {
+    check(`pack: ${js} 構文チェック`, false, String(e.stderr || e.message));
+  }
+}
+const termPath = resolve(packDir, 'terminal.html');
+check('pack: terminal.html が存在', existsSync(termPath));
+if (existsSync(termPath)) {
+  const thtml = readFileSync(termPath, 'utf8');
+  check('pack: terminal に入力欄がある', thtml.includes('id="term-in"') && thtml.includes('id="term-out"'));
+  check('pack: terminal にインラインstyle無し', !thtml.includes('style="'));
+  const tfooter = thtml.match(/<footer>([\s\S]*?)<\/footer>/);
+  check('pack: terminal のフッター版数', !!tfooter && tfooter[1].trim() === `${SITE_NAME} v${VERSION}`);
+  // パック無効時は terminal.html はサイトからリンクされない置物になるので、
+  // タブまわりのチェックは有効なときだけ行う（無効時の痕跡なしは本体ページ側で確認済み）
+  if (HAS_NEW_TAB) {
+    const tanchors = thtml.match(/<a\b[^>]*>/g) || [];
+    const ttabs = tanchors.filter(t => hasClass(t, 'tab'));
+    check('pack: terminal のタブ総数', ttabs.length === EXPECTED_TABS, `tabs=${ttabs.length} expected=${EXPECTED_TABS}`);
+    const tactives = ttabs.filter(t => hasClass(t, 'active'));
+    check('pack: terminal の active は自分', tactives.length === 1 && attr(tactives[0], 'href') === 'terminal.html');
+    check('pack: terminal にも新規タブボタン', thtml.includes('id="pack-new-tab-btn"'));
+  }
+}
+// terminal.js をスタブで動かす: バナー / help / version / glass / 未知コマンド / open chess
+try {
+  function termEl(id) {
+    const el = {
+      id, textContent: '', value: '', children: [], scrollTop: 0, scrollHeight: 0,
+      _listeners: {},
+      addEventListener(type, fn) { (this._listeners[type] ||= []).push(fn); },
+      fire(type, ev = {}) { for (const fn of this._listeners[type] || []) fn(ev); },
+      appendChild(c) { this.children.push(c); },
+      focus() {},
+    };
+    return el;
+  }
+  const tout = termEl('term-out');
+  const tin = termEl('term-in');
+  const trun = termEl('term-run');
+  const tfooterEl = termEl('footer');
+  tfooterEl.textContent = `${SITE_NAME} v${VERSION}`;
+  const tstore = new Map([['kinako-drops', '7'], ['kinako-drops-total', '42']]);
+  const tsandbox = {
+    document: {
+      getElementById: id => ({ 'term-out': tout, 'term-in': tin, 'term-run': trun })[id] || null,
+      createElement: () => termEl(''),
+      querySelector: sel => (sel === 'footer' ? tfooterEl : null),
+    },
+    localStorage: {
+      getItem: k => (tstore.has(k) ? tstore.get(k) : null),
+      setItem: (k, v) => tstore.set(k, String(v)),
+    },
+    location: {},
+    setTimeout: () => 0,
+  };
+  vm.createContext(tsandbox);
+  vm.runInContext(readFileSync(resolve(packDir, 'terminal.js'), 'utf8'), tsandbox, { filename: 'terminal.js' });
+  const outText = () => tout.children.map(c => c.textContent).join('\n');
+  check('terminal: バナーが出る', outText().includes('きなこのターミナル'), outText());
+  tin.value = 'help'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
+  check('terminal: help が動く', outText().includes('使えるコマンド'));
+  tin.value = 'version'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
+  check('terminal: version が版数を出す', outText().includes('v' + VERSION), outText());
+  tin.value = 'glass'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
+  check('terminal: glass がしずくを出す', outText().includes('7 / 30') && outText().includes('42'), outText());
+  tin.value = 'open chess'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
+  check('terminal: open chess は予定を案内', outText().includes('v1.2.0'), outText());
+  tin.value = 'hogehoge'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
+  check('terminal: 未知コマンドの案内', outText().includes('コマンドが見つからない'));
+} catch (e) {
+  check('terminal.js: スタブ動作確認', false, String(e && e.stack || e));
 }
 
 // ===== サマリ =====

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="拡張パックで作ったカスタムタブの表示ページ。">
+<title>カスタムタブ - きなこのサイト</title>
+<link rel="stylesheet" href="../../style.css">
+<link rel="stylesheet" href="terminal.css">
+<link rel="stylesheet" href="new-tab.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 6C58 26 80 48 80 67a30 30 0 1 1-60 0C20 48 42 26 50 6Z' fill='%237fd4ff'/%3E%3C/svg%3E">
+</head>
+<body>
+<main>
+  <div class="pack-head">
+    <a href="../../index.html">← きなこのサイト</a>
+    <span class="hint">拡張パックのカスタムタブ</span>
+  </div>
+
+  <h1 id="viewer-title">カスタムタブ</h1>
+  <p id="viewer-msg" class="sub">メモは打つたびにブラウザへ自動保存される。</p>
+  <textarea class="memo-area" id="memo" aria-label="メモ"></textarea>
+  <div>
+    <button class="danger" id="viewer-delete" type="button">このタブを削除</button>
+  </div>
+
+  <footer>きなこのサイト v1.1.0</footer>
+</main>
+<script src="viewer.js"></script>
+</body>
+</html>
