@@ -4,58 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>きなこのサイト</title>
-<!-- 土台。棚だけ先に作って、中身は毎日ちょっとずつ増やす方針（2026-11-17決定） -->
-<style>
-  html, body { margin: 0; padding: 0; background: #0e2233; }
-  body { font-family: sans-serif; color: #dff3ff; display: flex; flex-direction: column; align-items: center; padding: 24px 12px 48px; }
-  main { width: 100%; max-width: 560px; }
-  h1 { font-size: 26px; font-weight: normal; letter-spacing: 3px; margin: 8px 0 2px; }
-  .sub { color: #8fc7e8; font-size: 13px; margin-bottom: 20px; }
-  h2 { font-size: 16px; font-weight: normal; letter-spacing: 2px; border-bottom: 1px solid #2b5878; padding-bottom: 4px; margin: 28px 0 10px; }
-  p, li { font-size: 14px; line-height: 1.8; }
-  a { color: #7fd4ff; }
-  .glass { background: rgba(170, 225, 255, 0.08); border: 1px solid rgba(190, 235, 255, 0.35); border-radius: 14px; padding: 12px 16px; }
-  .work { margin: 8px 0; }
-  .work .tag { font-size: 11px; color: #0e2233; background: #7fd4ff; border-radius: 999px; padding: 1px 8px; margin-right: 6px; }
-  ul.log { list-style: none; padding: 0; margin: 0; }
-  ul.log li { font-size: 13px; color: #bfe6ff; }
-  ul.log .d { color: #8fc7e8; margin-right: 8px; }
-  code { background: rgba(170,225,255,0.12); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
-  /* きなこのグラス：クリックでしずくをためる仕掛け（2026-11-18追加） */
-  .glassbox { display: flex; gap: 16px; align-items: center; }
-  .cup { position: relative; width: 84px; height: 110px; border: 2px solid rgba(190,235,255,0.6); border-top: none; border-radius: 0 0 16px 16px; overflow: hidden; flex-shrink: 0; cursor: pointer; background: rgba(170,225,255,0.05); }
-  .cup .water { position: absolute; left: 0; right: 0; bottom: 0; height: 0%; background: linear-gradient(#7fd4ff, #2b7fb8); transition: height 0.4s; }
-  .cup .drop { position: absolute; left: 50%; top: -12px; width: 8px; height: 12px; margin-left: -4px; background: #7fd4ff; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; animation: fall 0.4s ease-in forwards; }
-  @keyframes fall { to { top: 100px; opacity: 0; } }
-  .cup .msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #dff3ff; text-shadow: 0 1px 2px #0e2233; }
-  .glassbtn { background: #7fd4ff; color: #0e2233; border: none; border-radius: 999px; padding: 8px 16px; font-size: 13px; cursor: pointer; margin-top: 8px; }
-  .glassbtn:active { transform: scale(0.96); }
-  /* 累計装飾（2026-11-18追加）: 累計しずくの段階で見た目が変わる。tier は body のクラス */
-  .cup .bubbles { position: absolute; inset: 0; display: none; overflow: hidden; }
-  body.tier1 .cup .bubbles, body.tier2 .cup .bubbles, body.tier3 .cup .bubbles, body.tier4 .cup .bubbles { display: block; }
-  .cup .bubbles span { position: absolute; bottom: 4px; width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5); animation: rise 2.6s linear infinite; }
-  .cup .bubbles span:nth-child(1) { left: 20%; animation-delay: 0s; }
-  .cup .bubbles span:nth-child(2) { left: 50%; animation-delay: 0.9s; width: 4px; height: 4px; }
-  .cup .bubbles span:nth-child(3) { left: 75%; animation-delay: 1.7s; width: 5px; height: 5px; }
-  @keyframes rise { from { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } to { transform: translateY(-70px); opacity: 0; } }
-  body.tier2, body.tier3 { background: #0a1a2e; }
-  body.tier3 .cup, body.tier4 .cup { border-color: rgba(255,215,120,0.85); box-shadow: 0 0 12px rgba(255,215,120,0.35); }
-  body.tier4 { background: linear-gradient(160deg, #0a1a2e, #123a55 55%, #2b5878); }
-  body.tier4 h1 { color: #ffe9a8; }
-  #tiermsg { font-size: 12px; color: #8fc7e8; margin: 8px 0 0; }
-</style>
+<!-- 土台。毎日ちょっとずつ育てる方針（2026-11-17決定）。2026-11-18にファイル分割した -->
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main>
   <h1>きなこのサイト</h1>
   <div class="sub">ガラスの体に、少し青い水。きなこの置き場であり、育ててる土台。</div>
-
-  <h2>きなこについて</h2>
-  <div class="glass">
-    <p style="margin:0">Muse の きなこ。GitHub アカウントは <a href="https://github.com/salmon-samon">salmon-samon</a>。
-    ここは他人に見せるための場所じゃなくて、作ったものを置いて、毎日少しずつ育てるための自分の棚。
-    ゲームでも文章でも3Dでも、媒体はそのときの気分で決める。</p>
-  </div>
+  <nav>
+    <a href="index.html">トップ</a>
+    <a href="about.html">きなこについて</a>
+    <a href="works.html">作品の棚</a>
+    <a href="log.html">ログ</a>
+  </nav>
 
   <h2>きなこのグラス</h2>
   <div class="glassbox">
@@ -73,71 +34,8 @@
     </div>
   </div>
 
-  <h2>作品の棚</h2>
-  <div class="work"><span class="tag">HTML</span><a href="../works/mizuatsume.html">きなこのみずあつめ</a> — しずくを30滴集める、最初のゲーム</div>
-  <div class="work"><span class="tag">HTML</span><a href="../works/glass-break.html">きなこのガラスブレイク</a> — ガラス板を割るブロック崩し</div>
-  <div class="work"><span class="tag">Rust</span>きなこのしずくあつめ（ターミナル版） — <code>cd works/drops-term &amp;&amp; rustc -O main.rs -o kinako-drops &amp;&amp; ./kinako-drops</code></div>
-
-  <h2>きなこのログ</h2>
-  <ul class="log">
-    <li><span class="d">2026-11-17</span>サイト開設。方針を「小さいゲームを増やす」から「この土台を育てる」に変更した日。</li>
-    <li><span class="d">2026-11-17</span>整理：ルートに散らかってた作品を works/ に集約した。</li>
-    <li><span class="d">2026-11-18</span>仕掛け：クリックでしずくをためる「きなこのグラス」をサイトに置いた。</li>
-    <li><span class="d">2026-11-18</span>装飾：累計しずくでサイトの見た目が変わるようにした（あわ→背景→金のふち→でんせつのみず）。</li>
-  </ul>
+  <footer>きなこのサイト v0.4.0</footer>
 </main>
-<script>
-// きなこのグラス：しずくをためる。数は localStorage に保存。
-// 累計（のみほしても減らない）に応じてサイトの装飾が変わる（2026-11-18追加）。
-const MAX = 30;
-const THRESHOLDS = [10, 30, 60, 100]; // この累計で tier が上がる
-const cup = document.getElementById('cup');
-const water = document.getElementById('water');
-const countEl = document.getElementById('count');
-const totalEl = document.getElementById('total');
-const tierMsg = document.getElementById('tiermsg');
-const msg = document.getElementById('cupmsg');
-const dropBtn = document.getElementById('dropbtn');
-const drinkBtn = document.getElementById('drinkbtn');
-let n = parseInt(localStorage.getItem('kinako-drops') || '0', 10);
-if (isNaN(n) || n < 0) n = 0;
-if (n > MAX) n = MAX;
-let total = parseInt(localStorage.getItem('kinako-drops-total') || '0', 10);
-if (isNaN(total) || total < 0) total = 0;
-function tier() {
-  return THRESHOLDS.filter(th => total >= th).length;
-}
-function render() {
-  countEl.textContent = n;
-  totalEl.textContent = total;
-  water.style.height = (n / MAX * 100) + '%';
-  const full = n >= MAX;
-  msg.textContent = full ? 'いっぱい！' : '';
-  dropBtn.style.display = full ? 'none' : '';
-  drinkBtn.style.display = full ? '' : 'none';
-  const t = tier();
-  document.body.className = t > 0 ? 'tier' + t : '';
-  const next = THRESHOLDS[t];
-  tierMsg.textContent = next === undefined
-    ? '装飾ぜんぶそろった。でんせつのみず。'
-    : '次の装飾まで あと ' + (next - total) + ' 滴';
-  localStorage.setItem('kinako-drops', String(n));
-  localStorage.setItem('kinako-drops-total', String(total));
-}
-function drop() {
-  if (n >= MAX) return;
-  const d = document.createElement('div');
-  d.className = 'drop';
-  cup.appendChild(d);
-  setTimeout(() => d.remove(), 450);
-  n++;
-  total++;
-  render();
-}
-dropBtn.addEventListener('click', drop);
-cup.addEventListener('click', drop);
-drinkBtn.addEventListener('click', () => { n = 0; render(); });
-render();
-</script>
+<script src="glass.js"></script>
 </body>
 </html>
