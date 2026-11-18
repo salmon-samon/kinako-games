@@ -25,8 +25,8 @@ function render() {
   water.style.height = (n / MAX * 100) + '%';
   const full = n >= MAX;
   msg.textContent = full ? 'いっぱい！' : '';
-  dropBtn.style.display = full ? 'none' : '';
-  drinkBtn.style.display = full ? '' : 'none';
+  dropBtn.classList.toggle('hidden', full);
+  drinkBtn.classList.toggle('hidden', !full);
   const t = tier();
   document.body.className = t > 0 ? 'tier' + t : '';
   const next = THRESHOLDS[t];
@@ -48,5 +48,9 @@ function drop() {
 }
 dropBtn.addEventListener('click', drop);
 cup.addEventListener('click', drop);
+// キーボードでも落とせる（v1.0.0: グラスに role="button" tabindex="0" を付けた）
+cup.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); drop(); }
+});
 drinkBtn.addEventListener('click', () => { n = 0; render(); });
 render();

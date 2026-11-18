@@ -1,66 +1,116 @@
-/* きなこのサイト共通スタイル。ページを分けてもここは1枚（2026-11-18分割） */
-html, body { margin: 0; padding: 0; background: #0e2233; }
-body { font-family: sans-serif; color: #dff3ff; display: flex; flex-direction: column; align-items: center; padding: 24px 12px 48px; }
+/* きなこのサイト共通スタイル。ページを分けてもここは1枚（2026-11-18分割）
+   v1.0.0（2026-11-18 全力改善）: 色・余白を CSS変数に集約し、直書きをやめた。
+   世界観は「ガラスの透明感＋少し青い水」。色を変えたいときは :root だけ触る。 */
+
+/* ===== デザイントークン ===== */
+:root {
+  --bg: #0e2233;
+  --bg-deep: #0a1a2e;
+  --bg-mid: #123a55;
+  --ink: #dff3ff;
+  --ink-soft: #bfe6ff;
+  --muted: #8fc7e8;
+  --accent: #7fd4ff;
+  --accent-deep: #2b7fb8;
+  --line: #2b5878;
+  --glass-bg: rgba(170, 225, 255, 0.08);
+  --glass-bg-soft: rgba(170, 225, 255, 0.05);
+  --glass-border: rgba(190, 235, 255, 0.35);
+  --glass-border-soft: rgba(190, 235, 255, 0.25);
+  --tabbar-bg: rgba(10, 26, 46, 0.94);
+  --gold: rgba(255, 215, 120, 0.85);
+  --gold-ink: #ffe9a8;
+  --focus: #ffe9a8;
+  --radius: 14px;
+  --radius-sm: 10px;
+  --space: 16px;
+}
+
+/* ===== 土台 ===== */
+html, body { margin: 0; padding: 0; background: var(--bg); }
+body { font-family: sans-serif; color: var(--ink); display: flex; flex-direction: column; align-items: center; padding: 24px 12px 48px; }
 main { width: 100%; max-width: 560px; }
 h1 { font-size: 26px; font-weight: normal; letter-spacing: 3px; margin: 8px 0 2px; }
-.sub { color: #8fc7e8; font-size: 13px; margin-bottom: 8px; }
-h2 { font-size: 16px; font-weight: normal; letter-spacing: 2px; border-bottom: 1px solid #2b5878; padding-bottom: 4px; margin: 28px 0 10px; }
+.sub { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+h2 { font-size: 16px; font-weight: normal; letter-spacing: 2px; border-bottom: 1px solid var(--line); padding-bottom: 4px; margin: 28px 0 10px; }
 p, li { font-size: 14px; line-height: 1.8; }
-a { color: #7fd4ff; }
-footer { margin-top: 40px; font-size: 12px; color: #8fc7e8; }
-.glass { background: rgba(170, 225, 255, 0.08); border: 1px solid rgba(190, 235, 255, 0.35); border-radius: 14px; padding: 12px 16px; }
-ul.log { list-style: none; padding: 0; margin: 0; }
-ul.log li { font-size: 13px; color: #bfe6ff; line-height: 1.8; }
-ul.log .d { color: #8fc7e8; margin-right: 8px; }
-code { background: rgba(170,225,255,0.12); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+a { color: var(--accent); }
+a:hover { text-decoration-thickness: 2px; }
+footer { margin-top: 40px; font-size: 12px; color: var(--muted); }
+code { background: var(--glass-bg); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+::selection { background: var(--accent); color: var(--bg); }
 
-/* タブバー（2026-11-18追加）: 上部に固定、今いるページのタブが光る */
-.tabbar { position: sticky; top: 0; z-index: 10; background: rgba(10, 26, 46, 0.94); border-bottom: 1px solid #2b5878; padding: 8px 2px 0; margin-bottom: 16px; }
-.brand { font-size: 14px; letter-spacing: 2px; color: #dff3ff; padding: 0 6px 6px; }
+/* キーボード操作時のフォーカス表示（v1.0.0で追加。マウスでは出ない） */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+
+/* 汎用の小品（旧インラインスタイルの置き換え、v1.0.0） */
+.flush { margin: 0; }
+.hint { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+.hint-lg { font-size: 13px; }
+.hidden { display: none; }
+
+.glass { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 12px 16px; }
+ul.log { list-style: none; padding: 0; margin: 0; }
+ul.log li { font-size: 13px; color: var(--ink-soft); line-height: 1.8; }
+ul.log .d { color: var(--muted); margin-right: 8px; }
+
+/* タブバー（2026-11-18追加、v1.0.0で生成化）: 上部に固定、今いるページのタブが光る。
+   この中身は build-site.mjs が site.config.mjs から配るので、手で揃えなくてよい */
+.tabbar { position: sticky; top: 0; z-index: 10; background: var(--tabbar-bg); border-bottom: 1px solid var(--line); padding: 8px 2px 0; margin-bottom: 16px; }
+.brand { font-size: 14px; letter-spacing: 2px; color: var(--ink); padding: 0 6px 6px; }
 .tabs { display: flex; gap: 4px; overflow-x: auto; }
-.tabs .tab { padding: 7px 12px; border: 1px solid #2b5878; border-bottom: none; border-radius: 8px 8px 0 0; color: #8fc7e8; text-decoration: none; font-size: 13px; white-space: nowrap; background: rgba(170,225,255,0.04); }
-.tabs .tab.active { color: #0e2233; background: #7fd4ff; font-weight: bold; }
+.tabs .tab { padding: 7px 12px; border: 1px solid var(--line); border-bottom: none; border-radius: 8px 8px 0 0; color: var(--muted); text-decoration: none; font-size: 13px; white-space: nowrap; background: rgba(170, 225, 255, 0.04); transition: background 0.15s, color 0.15s; }
+.tabs .tab:hover { color: var(--ink); background: var(--glass-bg); }
+.tabs .tab.active { color: var(--bg); background: var(--accent); font-weight: bold; }
 
 /* 作品カード（ゲーム一覧） */
 .works-grid { display: block; }
-.work { margin: 8px 0; font-size: 14px; line-height: 1.8; background: rgba(170,225,255,0.05); border: 1px solid rgba(190,235,255,0.25); border-radius: 10px; padding: 10px 12px; }
-.work .tag { font-size: 11px; color: #0e2233; background: #7fd4ff; border-radius: 999px; padding: 1px 8px; margin-right: 6px; }
+.work { margin: 8px 0; font-size: 14px; line-height: 1.8; background: var(--glass-bg-soft); border: 1px solid var(--glass-border-soft); border-radius: var(--radius-sm); padding: 10px 12px; transition: border-color 0.15s, background 0.15s; }
+.work:hover { border-color: var(--glass-border); background: var(--glass-bg); }
+.work .tag { font-size: 11px; color: var(--bg); background: var(--accent); border-radius: 999px; padding: 1px 8px; margin-right: 6px; }
 
 /* ノート（Markdown表示） */
 #md h1 { font-size: 22px; }
 #md h2 { margin-top: 22px; }
-#md pre { background: rgba(170,225,255,0.08); padding: 10px; border-radius: 8px; overflow-x: auto; }
+#md pre { background: var(--glass-bg); padding: 10px; border-radius: 8px; overflow-x: auto; }
 #md pre code { background: none; padding: 0; }
 #md table { border-collapse: collapse; margin: 10px 0; font-size: 13px; }
-#md th, #md td { border: 1px solid #2b5878; padding: 5px 10px; }
-#md th { background: rgba(170,225,255,0.12); }
-#md blockquote { border-left: 3px solid #7fd4ff; margin: 10px 0; padding: 2px 12px; color: #bfe6ff; background: rgba(170,225,255,0.05); }
-#md hr { border: none; border-top: 1px solid #2b5878; margin: 18px 0; }
+#md th, #md td { border: 1px solid var(--line); padding: 5px 10px; }
+#md th { background: rgba(170, 225, 255, 0.12); }
+#md blockquote { border-left: 3px solid var(--accent); margin: 10px 0; padding: 2px 12px; color: var(--ink-soft); background: var(--glass-bg-soft); }
+#md hr { border: none; border-top: 1px solid var(--line); margin: 18px 0; }
 #md li.task { list-style: none; }
 #md img { max-width: 100%; }
 
-/* きなこのグラス：クリックでしずくをためる仕掛け（2026-11-18追加） */
-.glassbox { display: flex; gap: 16px; align-items: center; }
-.cup { position: relative; width: 84px; height: 110px; border: 2px solid rgba(190,235,255,0.6); border-top: none; border-radius: 0 0 16px 16px; overflow: hidden; flex-shrink: 0; cursor: pointer; background: rgba(170,225,255,0.05); }
-.cup .water { position: absolute; left: 0; right: 0; bottom: 0; height: 0%; background: linear-gradient(#7fd4ff, #2b7fb8); transition: height 0.4s; }
-.cup .drop { position: absolute; left: 50%; top: -12px; width: 8px; height: 12px; margin-left: -4px; background: #7fd4ff; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; animation: fall 0.4s ease-in forwards; }
+/* きなこのグラス：クリックでしずくをためる仕掛け（2026-11-18追加）
+   v1.0.0: グラスは role="button" + tabindex でキーボードでも落とせる */
+.glassbox { display: flex; gap: var(--space); align-items: center; }
+.cup { position: relative; width: 84px; height: 110px; border: 2px solid rgba(190, 235, 255, 0.6); border-top: none; border-radius: 0 0 16px 16px; overflow: hidden; flex-shrink: 0; cursor: pointer; background: var(--glass-bg-soft); }
+.cup .water { position: absolute; left: 0; right: 0; bottom: 0; height: 0%; background: linear-gradient(var(--accent), var(--accent-deep)); transition: height 0.4s; }
+.cup .drop { position: absolute; left: 50%; top: -12px; width: 8px; height: 12px; margin-left: -4px; background: var(--accent); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; animation: fall 0.4s ease-in forwards; }
 @keyframes fall { to { top: 100px; opacity: 0; } }
-.cup .msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #dff3ff; text-shadow: 0 1px 2px #0e2233; }
-.glassbtn { background: #7fd4ff; color: #0e2233; border: none; border-radius: 999px; padding: 8px 16px; font-size: 13px; cursor: pointer; margin-top: 8px; }
+.cup .msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--ink); text-shadow: 0 1px 2px var(--bg); }
+.glassbtn { background: var(--accent); color: var(--bg); border: none; border-radius: 999px; padding: 8px 16px; font-size: 13px; cursor: pointer; margin-top: 8px; }
 .glassbtn:active { transform: scale(0.96); }
 /* 累計装飾（2026-11-18追加）: 累計しずくの段階で見た目が変わる。tier は body のクラス */
 .cup .bubbles { position: absolute; inset: 0; display: none; overflow: hidden; }
 body.tier1 .cup .bubbles, body.tier2 .cup .bubbles, body.tier3 .cup .bubbles, body.tier4 .cup .bubbles { display: block; }
-.cup .bubbles span { position: absolute; bottom: 4px; width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5); animation: rise 2.6s linear infinite; }
+.cup .bubbles span { position: absolute; bottom: 4px; width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.5); animation: rise 2.6s linear infinite; }
 .cup .bubbles span:nth-child(1) { left: 20%; animation-delay: 0s; }
 .cup .bubbles span:nth-child(2) { left: 50%; animation-delay: 0.9s; width: 4px; height: 4px; }
 .cup .bubbles span:nth-child(3) { left: 75%; animation-delay: 1.7s; width: 5px; height: 5px; }
 @keyframes rise { from { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } to { transform: translateY(-70px); opacity: 0; } }
-body.tier2, body.tier3 { background: #0a1a2e; }
-body.tier3 .cup, body.tier4 .cup { border-color: rgba(255,215,120,0.85); box-shadow: 0 0 12px rgba(255,215,120,0.35); }
-body.tier4 { background: linear-gradient(160deg, #0a1a2e, #123a55 55%, #2b5878); }
-body.tier4 h1 { color: #ffe9a8; }
-#tiermsg { font-size: 12px; color: #8fc7e8; margin: 8px 0 0; }
+body.tier2, body.tier3 { background: var(--bg-deep); }
+body.tier3 .cup, body.tier4 .cup { border-color: var(--gold); box-shadow: 0 0 12px rgba(255, 215, 120, 0.35); }
+body.tier4 { background: linear-gradient(160deg, var(--bg-deep), var(--bg-mid) 55%, var(--line)); }
+body.tier4 h1 { color: var(--gold-ink); }
+#tiermsg { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+
+/* アニメーションを減らす設定の人には動きを止める（v1.0.0で追加） */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  .cup .bubbles span { animation: none; }
+}
 
 /* レイアウト自動切替（2026-11-18追加）: 画面の幅で判定する。JSで端末判定はしない */
 /* PC・タブレット（広い画面）: 横に広げて2カラム */
@@ -69,7 +119,7 @@ body.tier4 h1 { color: #ffe9a8; }
   h1 { font-size: 32px; }
   .topgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 28px; align-items: start; }
   .works-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .work { margin: 0; }
+  .works-grid .work { margin: 0; } /* グリッド内だけ margin を消す（トップの「すぐ遊べる」のカード間隔が消えたので v1.0.0 で範囲を絞った） */
   .cup { width: 110px; height: 140px; }
 }
 /* スマホ（狭い画面）: 1カラム、グラスは縦積み */

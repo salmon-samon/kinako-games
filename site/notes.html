@@ -3,30 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Markdownで書くきなこのノート。notes.md を編集するとそのままページになる。">
 <title>ノート - きなこのサイト</title>
 <link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 6C58 26 80 48 80 67a30 30 0 1 1-60 0C20 48 42 26 50 6Z' fill='%237fd4ff'/%3E%3C/svg%3E">
 </head>
 <body>
 <main>
   <header class="tabbar">
     <div class="brand">きなこのサイト</div>
-    <nav class="tabs">
+    <nav class="tabs" aria-label="ページ">
       <a class="tab" href="index.html">トップ</a>
       <a class="tab" href="about.html">自己紹介</a>
       <a class="tab" href="works.html">ゲーム一覧</a>
       <a class="tab" href="log.html">ログ</a>
-      <a class="tab active" href="notes.html">ノート</a>
+      <a class="tab active" href="notes.html" aria-current="page">ノート</a>
     </nav>
   </header>
 
   <!-- この中身は notes.md から build-notes.mjs で生成。直接編集しない -->
   <div id="md">
 <!--MD-START-->
-<h1>きなこのノート</h1><p>このページは <strong>Markdown</strong> で書かれている。<code>notes.md</code> を編集すると、そのままページになる。</p><h2>2026-11-18 サイトの仕組みを増やした</h2><ul><li>上部にタブバーを付けた（トップ / 自己紹介 / ゲーム一覧 / ログ / ノート）</li><li>PCとスマホでレイアウトが自動で変わるようにした（画面幅で判定）</li><li>このノートを追加した。文章はこれからはMDで書ける</li></ul><p>変更履歴の細かいのは <a href="CHANGELOG.md">CHANGELOG</a> にある（GitHubで読む用）。</p><h2>メモ</h2><ul><li>バージョンはセマンティックバージョニング：いま <strong>v0.6.0</strong></li><li>コード例のテスト</li></ul><pre><code>git log --oneline -3</code></pre><h2>変換できる記法（2026-11-18に仕上げた）</h2><p>md.js は雑な実装をやめて、だいたいの記法に対応させた。テストは <code>md.test.mjs</code>。</p><table><thead><tr><th>記法</th><th>書き方</th></tr></thead><tbody><tr><td>太字・斜体</td><td><code>**太**</code> <code>*斜*</code></td></tr><tr><td>表</td><td>この表そのもの</td></tr><tr><td>引用</td><td><code>&gt;</code> で始める</td></tr></tbody></table><blockquote><p>引用はこんな感じに表示される。中身も変換される。</p></blockquote><ul><li class="task"><input type="checkbox" disabled checked> 表に対応する</li><li class="task"><input type="checkbox" disabled checked> 引用に対応する</li><li class="task"><input type="checkbox" disabled> もっと凝った記法（脚注とか）はその都度</li></ul>
+<h1>きなこのノート</h1><p>このページは <strong>Markdown</strong> で書かれている。<code>notes.md</code> を編集すると、そのままページになる。</p><h2>2026-11-18 サイトの仕組みを増やした</h2><ul><li>上部にタブバーを付けた（トップ / 自己紹介 / ゲーム一覧 / ログ / ノート）</li><li>PCとスマホでレイアウトが自動で変わるようにした（画面幅で判定）</li><li>このノートを追加した。文章はこれからはMDで書ける</li></ul><p>変更履歴の細かいのは <a href="CHANGELOG.md">CHANGELOG</a> にある（GitHubで読む用）。</p><h2>2026-11-18 サイト本体を全力改善した（v1.0.0）</h2><p>リポジトリの中からランダムで選んだ対象を全力で改善する、という回でサイト本体が当たった。</p><ul><li>共通部分（タブバー／フッター／バージョン）は <code>site.config.mjs</code> が正で、<code>node build-site.mjs</code> で全ページに配る</li><li>色は style.css の CSS変数に集約。ページにインラインスタイルは置かない</li><li>グラスはキーボードでも落とせる。チェックは <code>node site.test.mjs</code></li><li>フレームワークは「必要になった部分にだけ拡張として入れる」方針。今回は生成で足りたので入れていない</li></ul><h2>メモ</h2><ul><li>バージョンはセマンティックバージョニング：いま <strong>v1.0.0</strong></li><li>コード例のテスト</li></ul><pre><code>git log --oneline -3</code></pre><h2>変換できる記法（2026-11-18に仕上げた）</h2><p>md.js は雑な実装をやめて、だいたいの記法に対応させた。テストは <code>md.test.mjs</code>。</p><table><thead><tr><th>記法</th><th>書き方</th></tr></thead><tbody><tr><td>太字・斜体</td><td><code>**太**</code> <code>*斜*</code></td></tr><tr><td>表</td><td>この表そのもの</td></tr><tr><td>引用</td><td><code>&gt;</code> で始める</td></tr></tbody></table><blockquote><p>引用はこんな感じに表示される。中身も変換される。</p></blockquote><ul><li class="task"><input type="checkbox" disabled checked> 表に対応する</li><li class="task"><input type="checkbox" disabled checked> 引用に対応する</li><li class="task"><input type="checkbox" disabled> もっと凝った記法（脚注とか）はその都度</li></ul>
 <!--MD-END-->
   </div>
 
-  <footer>きなこのサイト v0.6.0</footer>
+  <footer>きなこのサイト v1.0.0</footer>
 </main>
 </body>
 </html>

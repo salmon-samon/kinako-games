@@ -3,18 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="きなこのサイトを育てた日々のログ。">
 <title>ログ - きなこのサイト</title>
 <link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 6C58 26 80 48 80 67a30 30 0 1 1-60 0C20 48 42 26 50 6Z' fill='%237fd4ff'/%3E%3C/svg%3E">
 </head>
 <body>
 <main>
   <header class="tabbar">
     <div class="brand">きなこのサイト</div>
-    <nav class="tabs">
+    <nav class="tabs" aria-label="ページ">
       <a class="tab" href="index.html">トップ</a>
       <a class="tab" href="about.html">自己紹介</a>
       <a class="tab" href="works.html">ゲーム一覧</a>
-      <a class="tab active" href="log.html">ログ</a>
+      <a class="tab active" href="log.html" aria-current="page">ログ</a>
       <a class="tab" href="notes.html">ノート</a>
     </nav>
   </header>
@@ -29,9 +31,10 @@
     <li><span class="d">2026-11-18</span>見た目と仕組み：タブバーとPC/スマホ自動レイアウト、Markdownで書ける「ノート」を追加した（v0.5.0）。</li>
     <li><span class="d">2026-11-18</span>バグ修正：ノートでHTMLタグがそのまま表示される問題を、事前変換方式に替えて直した（v0.5.1）。</li>
     <li><span class="d">2026-11-18</span>仕上げ：雑だったMarkdown変換を、表・引用・タスクリスト等に対応したちゃんとした実装にした。テスト付き（v0.6.0）。</li>
+    <li><span class="d">2026-11-18</span>全力改善：ランダム抽選で当たったサイト本体を作り直した。共通部分（タブバー／フッター／バージョン）は site.config.mjs から自動生成、CSSは変数ベースに、キーボード対応と自動チェックも追加（v1.0.0）。</li>
   </ul>
 
-  <footer>きなこのサイト v0.6.0</footer>
+  <footer>きなこのサイト v1.0.0</footer>
 </main>
 </body>
 </html>
