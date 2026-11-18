@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>きなこのチェス</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #0e2233; }
+  body { display: flex; flex-direction: column; align-items: center; font-family: sans-serif; color: #dff3ff; padding: 20px 12px 48px; }
+  h1 { font-size: 20px; margin: 8px 0 2px; font-weight: normal; letter-spacing: 3px; }
+  .sub { color: #8fc7e8; font-size: 13px; margin-bottom: 12px; }
+  .wrap { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; align-items: flex-start; width: 100%; max-width: 760px; }
+  /* ガラス盤 */
+  #board { display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); width: min(92vw, 440px); aspect-ratio: 1; border: 2px solid rgba(190, 235, 255, 0.45); border-radius: 12px; overflow: hidden; background: rgba(170, 225, 255, 0.08); }
+  .sq { border: 0; border-radius: 0; padding: 0; margin: 0; font-size: clamp(22px, 7vw, 38px); line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .sq.light { background: rgba(190, 235, 255, 0.22); }
+  .sq.dark { background: rgba(14, 42, 66, 0.85); }
+  .sq.white-piece { color: #cfeeff; text-shadow: 0 0 6px rgba(127, 212, 255, 0.9), 0 2px 2px rgba(0, 0, 0, 0.4); }
+  .sq.black-piece { color: #0b1520; text-shadow: 0 0 3px rgba(190, 235, 255, 0.9), 0 0 1px rgba(190, 235, 255, 0.8); }
+  .sq.selected { outline: 3px solid #ffe9a8; outline-offset: -3px; }
+  .sq.target { box-shadow: inset 0 0 0 3px rgba(127, 212, 255, 0.85); }
+  .sq.capture { box-shadow: inset 0 0 0 3px rgba(255, 150, 150, 0.9); }
+  .sq.lastmove { box-shadow: inset 0 0 0 2px rgba(255, 233, 168, 0.6); }
+  .sq.check { background: rgba(255, 110, 110, 0.45); }
+  .sq:focus-visible { outline: 3px solid #ffe9a8; outline-offset: -3px; }
+  /* 横のパネル */
+  .side { width: min(92vw, 280px); display: flex; flex-direction: column; gap: 12px; }
+  #status { font-size: 15px; min-height: 22px; color: #ffe9a8; }
+  .panel { background: rgba(170, 225, 255, 0.08); border: 1px solid rgba(190, 235, 255, 0.35); border-radius: 14px; padding: 12px 14px; }
+  .panel h2 { font-size: 14px; font-weight: normal; letter-spacing: 2px; margin: 0 0 6px; color: #bfe6ff; }
+  .panel p { font-size: 13px; line-height: 1.7; margin: 4px 0; }
+  .caps { font-size: 20px; min-height: 26px; letter-spacing: 1px; }
+  #moves { white-space: pre-wrap; font-size: 13px; line-height: 1.8; max-height: 160px; overflow-y: auto; }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  button { font-size: 14px; padding: 6px 16px; border-radius: 999px; border: none; background: #7fd4ff; color: #0e2233; cursor: pointer; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  select { font-size: 14px; padding: 5px 8px; border-radius: 8px; border: 1px solid rgba(190, 235, 255, 0.35); background: #123a55; color: #dff3ff; }
+  label { font-size: 13px; color: #bfe6ff; }
+  /* 取った駒で水がたまるグラス */
+  .glasses { display: flex; gap: 16px; justify-content: space-around; }
+  .glass-cup { width: 64px; height: 96px; border: 2px solid rgba(190, 235, 255, 0.5); border-top: none; border-radius: 0 0 12px 12px; position: relative; overflow: hidden; background: rgba(170, 225, 255, 0.05); }
+  .glass-cup .water { position: absolute; bottom: 0; left: 0; right: 0; height: 0%; background: linear-gradient(rgba(127, 212, 255, 0.75), rgba(43, 127, 184, 0.85)); transition: height 0.5s; }
+  .glass-cup .mark { position: absolute; top: 4px; left: 0; right: 0; text-align: center; font-size: 11px; color: #bfe6ff; }
+  .glass-label { text-align: center; font-size: 12px; color: #8fc7e8; margin-top: 4px; }
+  a { color: #7fd4ff; font-size: 13px; margin-top: 14px; }
+  .hint { font-size: 12px; color: #8fc7e8; margin: 10px 0 0; line-height: 1.7; }
+</style>
+</head>
+<body>
+<h1>きなこのチェス</h1>
+<p class="sub">白＝あなた、水色の駒。黒＝AI、墨色の駒。proエンジンと対局するよ。</p>
+<div class="wrap">
+  <div id="board" role="grid" aria-label="チェス盤"></div>
+  <div class="side">
+    <div id="status" role="status">白の番</div>
+    <div class="panel">
+      <h2>グラス</h2>
+      <p>取った駒の価値で水がたまるよ。満杯は価値39分。</p>
+      <div class="glasses">
+        <div>
+          <div class="glass-cup"><div class="water" id="water-white"></div><span class="mark">白</span></div>
+          <div class="glass-label">白が取った分</div>
+        </div>
+        <div>
+          <div class="glass-cup"><div class="water" id="water-black"></div><span class="mark">黒</span></div>
+          <div class="glass-label">黒が取った分</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>取った駒</h2>
+      <p>白が取った：<span class="caps" id="cap-white">—</span></p>
+      <p>黒が取った：<span class="caps" id="cap-black">—</span></p>
+    </div>
+    <div class="panel">
+      <h2>棋譜</h2>
+      <div id="moves">まだ手はないよ。白からどうぞ。</div>
+    </div>
+    <div class="controls">
+      <label>AIの強さ <select id="level" aria-label="AIの強さ"></select></label>
+      <button id="undo" type="button">待った</button>
+      <button id="newgame" type="button">最初から</button>
+    </div>
+  </div>
+</div>
+<p class="hint">駒をクリック（タップ）して選んで、光ったマスへ動かすよ。プロモーションはクイーンになるよ。<br>エンジンは rookie1.0-pro（検証済みの修正版）。キーボードでもマスを選べるよ。</p>
+<a href="../site/works.html">← ゲーム一覧へ</a>
+<script src="chess-engine.js"></script>
+<script src="chess.js"></script>
+</body>
+</html>

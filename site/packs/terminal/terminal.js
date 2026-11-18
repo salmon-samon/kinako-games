@@ -11,7 +11,8 @@
     top: 'index.html', index: 'index.html', home: 'index.html',
     about: 'about.html', works: 'works.html', games: 'works.html',
     log: 'log.html', notes: 'notes.html', note: 'notes.html',
-    terminal: 'packs/terminal/terminal.html', term: 'packs/terminal/terminal.html'
+    terminal: 'packs/terminal/terminal.html', term: 'packs/terminal/terminal.html',
+    chess: '../works/chess.html'
   };
   var history = [];
   var histIdx = -1;
@@ -41,7 +42,7 @@
       print('  about / whoami  きなこについて');
       print('  works           作品一覧');
       print('  glass           グラスのしずく状況');
-      print('  open <ページ>   ページを開く (top/about/works/log/notes/terminal)');
+      print('  open <ページ>   ページを開く (top/about/works/log/notes/terminal/chess)');
       print('  tab list        カスタムタブ一覧');
       print('  tab rm <名前>   カスタムタブを消す');
       print('  pack            この拡張パックの情報');
@@ -55,7 +56,7 @@
       print('きなこのみずあつめ (HTML) — open works からゲーム一覧へ');
       print('きなこのガラスブレイク (HTML)');
       print('きなこのしずくあつめ (Rust / ターミナル版)');
-      print('チェス (proエンジン) — 明日 2026-11-19 に v1.2.0 で追加予定');
+      print('チェス (proエンジン) — open chess で対局ページへ');
     },
     glass: function () {
       var n = localStorage.getItem('kinako-drops') || '0';
@@ -69,9 +70,8 @@
     exit: function () { print('またね。トップに戻る。', 'dim'); setTimeout(function () { location.href = ROOT + 'index.html'; }, 600); },
     open: function (args) {
       var key = (args[0] || '').toLowerCase();
-      if (key === 'chess') { print('チェスはまだ棚にない。明日 2026-11-19 の v1.2.0 で追加予定。', 'dim'); return; }
       var file = PAGES[key];
-      if (!file) { print('開けるページが分からない: ' + (key || '(なし)') + ' — open top/about/works/log/notes/terminal', 'dim'); return; }
+      if (!file) { print('開けるページが分からない: ' + (key || '(なし)') + ' — open top/about/works/log/notes/terminal/chess', 'dim'); return; }
       print('開く: ' + key, 'ok');
       location.href = ROOT + file;
     },

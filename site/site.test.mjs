@@ -226,7 +226,7 @@ if (existsSync(termPath)) {
     check('pack: terminal にも新規タブボタン', thtml.includes('id="pack-new-tab-btn"'));
   }
 }
-// terminal.js をスタブで動かす: バナー / help / version / glass / 未知コマンド / open chess
+// terminal.js をスタブで動かす: バナー / help / version / glass / 未知コマンド / open chess の移動
 try {
   function termEl(id) {
     const el = {
@@ -264,16 +264,109 @@ try {
   check('terminal: バナーが出る', outText().includes('きなこのターミナル'), outText());
   tin.value = 'help'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
   check('terminal: help が動く', outText().includes('使えるコマンド'));
+  check('terminal: help に chess がある', outText().includes('chess'));
   tin.value = 'version'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
   check('terminal: version が版数を出す', outText().includes('v' + VERSION), outText());
   tin.value = 'glass'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
   check('terminal: glass がしずくを出す', outText().includes('7 / 30') && outText().includes('42'), outText());
   tin.value = 'open chess'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
-  check('terminal: open chess は予定を案内', outText().includes('v1.2.0'), outText());
+  check('terminal: open chess はチェスページへ移動', String(tsandbox.location.href || '').endsWith('works/chess.html'), `href=${tsandbox.location.href}`);
   tin.value = 'hogehoge'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
   check('terminal: 未知コマンドの案内', outText().includes('コマンドが見つからない'));
 } catch (e) {
   check('terminal.js: スタブ動作確認', false, String(e && e.stack || e));
+}
+
+// ===== 10: チェス（v1.2.0） =====
+const worksDir = resolve(siteDir, '..', 'works');
+const chessHtmlPath = resolve(worksDir, 'chess.html');
+const chessEnginePath = resolve(worksDir, 'chess-engine.js');
+const chessJsPath = resolve(worksDir, 'chess.js');
+check('chess: works/chess.html が存在', existsSync(chessHtmlPath));
+check('chess: works/chess-engine.js が存在', existsSync(chessEnginePath));
+check('chess: works/chess.js が存在', existsSync(chessJsPath));
+// works.html からのリンクが実ファイルに届く（6のリンク解決も site/ 配下を見るが、ここで明示する）
+const worksHtml = readFileSync(resolve(siteDir, 'works.html'), 'utf8');
+check('chess: works.html にチェスの行がある', worksHtml.includes('../works/chess.html') && worksHtml.includes('きなこのチェス'));
+check('chess: works.html のリンク先が実在', existsSync(resolve(worksDir, 'chess.html')));
+const logHtml = readFileSync(resolve(siteDir, 'log.html'), 'utf8');
+check('chess: log.html に 2026-11-19 のチェス行がある', logHtml.includes('2026-11-19') && logHtml.includes('チェス'));
+if (existsSync(chessHtmlPath)) {
+  const chtml = readFileSync(chessHtmlPath, 'utf8');
+  check('chess: chess.html にインラインstyle無し', !chtml.includes('style="'));
+  check('chess: chess.html がエンジンを読む', chtml.includes('src="chess-engine.js"'));
+  check('chess: chess.html が chess.js を読む', chtml.includes('src="chess.js"'));
+  check('chess: chess.html に盤・グラス・棋譜がある', chtml.includes('id="board"') && chtml.includes('id="water-white"') && chtml.includes('id="moves"'));
+}
+for (const js of [chessEnginePath, chessJsPath]) {
+  try {
+    execFileSync(process.execPath, ['--check', js], { stdio: 'pipe' });
+    check(`chess: ${js.split('/').pop()} 構文チェック`, true);
+  } catch (e) {
+    check(`chess: ${js.split('/').pop()} 構文チェック`, false, String(e.stderr || e.message));
+  }
+}
+// エンジンの selfTest（rookie1.0-pro 内蔵の perft 標準値チェック）
+try {
+  const esb = {};
+  vm.createContext(esb);
+  vm.runInContext(readFileSync(chessEnginePath, 'utf8'), esb, { filename: 'chess-engine.js' });
+  const st = esb.ChessEngine.selfTest();
+  check('chess: エンジン selfTest が PASS', st.ok === true, JSON.stringify(st.results.map(r => r.got)));
+  check('chess: エンジン VERSION は rookie1.0-pro.4', esb.ChessEngine.VERSION === 'rookie1.0-pro.4', esb.ChessEngine.VERSION);
+} catch (e) {
+  check('chess: エンジン selfTest', false, String(e && e.stack || e));
+}
+// chess.js をスタブで動かす: e4 → AI応手、取り駒と水位、Qxf7# のメイト
+try {
+  function chessEl(id) {
+    const cls = new Set();
+    return {
+      id, textContent: '', value: '1', innerHTML: '', children: [], style: {},
+      parentElement: { title: '' },
+      _listeners: {},
+      classList: {
+        toggle(c, f) { const on = f === undefined ? !cls.has(c) : !!f; if (on) cls.add(c); else cls.delete(c); return on; },
+        contains(c) { return cls.has(c); },
+        add(c) { cls.add(c); },
+        remove(c) { cls.delete(c); },
+      },
+      addEventListener(t, fn) { (this._listeners[t] ||= []).push(fn); },
+      fire(t, ev = {}) { for (const fn of this._listeners[t] || []) fn(ev); },
+      appendChild(c) { this.children.push(c); },
+      setAttribute() {},
+    };
+  }
+  const cids = ['board', 'status', 'moves', 'cap-white', 'cap-black', 'water-white', 'water-black', 'level', 'undo', 'newgame'];
+  const cels = Object.fromEntries(cids.map(id => [id, chessEl(id)]));
+  const csb = {
+    document: {
+      getElementById: id => cels[id] || null,
+      createElement: () => chessEl(''),
+    },
+    setTimeout: fn => { fn(); return 0; }, // AIの応手を同期待ちで動かす
+  };
+  vm.createContext(csb);
+  vm.runInContext(readFileSync(chessEnginePath, 'utf8'), csb, { filename: 'chess-engine.js' });
+  vm.runInContext(readFileSync(chessJsPath, 'utf8'), csb, { filename: 'chess.js' });
+  const K = csb.KinakoChess;
+  check('chess: 初期局面は START_FEN', K.getFEN() === csb.ChessEngine.START_FEN, K.getFEN());
+  check('chess: 盤は64マス', cels.board.children.length === 64, `squares=${cels.board.children.length}`);
+  K.clickSquare(52); K.clickSquare(36); // e2-e4
+  check('chess: e4 のあと AI が応手する', K.getHistory().length === 2, `history=${K.getHistory().join(' ')}`);
+  check('chess: 棋譜に e4 がある', K.getHistory()[0] === 'e4', K.getHistory().join(' '));
+  K.loadFEN('rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 2');
+  K.clickSquare(36); K.clickSquare(27); // exd5
+  check('chess: exd5 で取った駒の価値が1', K.capturedValue(1) === 1, `value=${K.capturedValue(1)}`);
+  check('chess: 取るとグラスの水位が上がる', cels['water-white'].style.height === '3%', `height=${cels['water-white'].style.height}`);
+  check('chess: 取った駒が表示される', cels['cap-white'].textContent.includes('\u265F'), cels['cap-white'].textContent);
+  K.loadFEN('r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1');
+  K.clickSquare(31); K.clickSquare(13); // Qxf7#
+  check('chess: Qxf7# でチェックメイト', K.isOver() === true && K.getStatus().includes('チェックメイト'), K.getStatus());
+  K.undo();
+  check('chess: 待ったでメイト前に戻る', K.isOver() === false && K.getHistory().length === 0, `history=${K.getHistory().join(' ')}`);
+} catch (e) {
+  check('chess.js: スタブ対局の確認', false, String(e && e.stack || e));
 }
 
 // ===== サマリ =====
