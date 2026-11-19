@@ -30,6 +30,7 @@
   var levelEl = $('level');
   var undoBtn = $('undo');
   var newBtn = $('newgame');
+  var copyBtn = $('copy-moves');
 
   if (!E) {
     if (statusEl) statusEl.textContent = 'エンジンが読み込めなかった。chess-engine.js を確認してね。';
@@ -83,7 +84,8 @@
     waterBlackEl.parentElement.title = '黒が取った駒の価値: ' + bv;
   }
 
-  function renderMoves() {
+  // 棋譜を行の配列にする（表示とコピーの両方で使う）
+  function movesLines() {
     var lines = [];
     for (var i = 0; i < history.length; i += 2) {
       var n = i / 2 + 1;
@@ -91,7 +93,52 @@
       if (history[i + 1]) line += ' ' + history[i + 1].san;
       lines.push(line);
     }
+    return lines;
+  }
+
+  function renderMoves() {
+    var lines = movesLines();
     movesEl.textContent = lines.length ? lines.join('\n') : 'まだ手はないよ。白からどうぞ。';
+  }
+
+  // 棋譜を1行ずつのテキストにして返す。手が無ければ空文字
+  function movesText() {
+    return movesLines().join('\n');
+  }
+
+  // 棋譜をクリップボードへコピーする。返り値はコピーしたテキスト（手が無ければ空文字）
+  function copyMoves() {
+    var text = movesText();
+    if (!text) return '';
+    var done = function () {
+      copyBtn.textContent = 'コピーしたよ';
+      setTimeout(function () { copyBtn.textContent = '棋譜をコピー'; }, 1500);
+    };
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        var p = navigator.clipboard.writeText(text);
+        if (p && p.then) p.then(done, function () { fallbackCopy(text, done); });
+        else done();
+      } else {
+        fallbackCopy(text, done);
+      }
+    } catch (e) {
+      fallbackCopy(text, done);
+    }
+    return text;
+  }
+
+  // clipboard API が無い環境向けの代替手段（textarea 経由）
+  function fallbackCopy(text, done) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      if (document.body) document.body.appendChild(ta);
+      if (ta.select) ta.select();
+      var ok = document.execCommand ? document.execCommand('copy') : false;
+      if (ta.remove) ta.remove();
+      if (ok && done) done();
+    } catch (e) { /* コピーできなかったときは何もしない */ }
   }
 
   function renderBoard() {
@@ -157,6 +204,7 @@
       statusEl.textContent = (pos.turn === 1 ? '白' : '黒') + 'の番';
     }
     undoBtn.disabled = history.length === 0 || thinking;
+    copyBtn.disabled = history.length === 0;
   }
 
   function doMove(m) {
@@ -255,6 +303,7 @@
   }
   undoBtn.addEventListener('click', undo);
   newBtn.addEventListener('click', newGame);
+  copyBtn.addEventListener('click', copyMoves);
   if (levelEl) levelEl.addEventListener('change', function () { if (!thinking) refresh(); });
 
   newGame();
@@ -280,6 +329,8 @@
       lastMove = null;
       refresh();
     },
-    capturedValue: function (color) { return capturedValue(capturedBy(color)); }
+    capturedValue: function (color) { return capturedValue(capturedBy(color)); },
+    getMovesText: movesText,
+    copyMoves: copyMoves
   };
 })();

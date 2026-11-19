@@ -297,6 +297,7 @@ if (existsSync(chessHtmlPath)) {
   check('chess: chess.html がエンジンを読む', chtml.includes('src="chess-engine.js"'));
   check('chess: chess.html が chess.js を読む', chtml.includes('src="chess.js"'));
   check('chess: chess.html に盤・グラス・棋譜がある', chtml.includes('id="board"') && chtml.includes('id="water-white"') && chtml.includes('id="moves"'));
+  check('chess: chess.html に棋譜コピーボタンがある', chtml.includes('id="copy-moves"'));
 }
 for (const js of [chessEnginePath, chessJsPath]) {
   try {
@@ -337,12 +338,21 @@ try {
       setAttribute() {},
     };
   }
-  const cids = ['board', 'status', 'moves', 'cap-white', 'cap-black', 'water-white', 'water-black', 'level', 'undo', 'newgame'];
+  const cids = ['board', 'status', 'moves', 'cap-white', 'cap-black', 'water-white', 'water-black', 'level', 'undo', 'newgame', 'copy-moves'];
   const cels = Object.fromEntries(cids.map(id => [id, chessEl(id)]));
+  let clipboardText = null;
   const csb = {
     document: {
       getElementById: id => cels[id] || null,
       createElement: () => chessEl(''),
+    },
+    navigator: {
+      clipboard: {
+        writeText(t) {
+          clipboardText = t;
+          return { then(ok) { if (ok) ok(); } }; // 同期で完了扱いにするスタブ
+        },
+      },
     },
     setTimeout: fn => { fn(); return 0; }, // AIの応手を同期待ちで動かす
   };
@@ -352,9 +362,15 @@ try {
   const K = csb.KinakoChess;
   check('chess: 初期局面は START_FEN', K.getFEN() === csb.ChessEngine.START_FEN, K.getFEN());
   check('chess: 盤は64マス', cels.board.children.length === 64, `squares=${cels.board.children.length}`);
+  check('chess: 手が無いうちは棋譜コピーが押せない', cels['copy-moves'].disabled === true, `disabled=${cels['copy-moves'].disabled}`);
+  check('chess: 手が無いうちはコピーする文字が無い', K.copyMoves() === '' && K.getMovesText() === '');
   K.clickSquare(52); K.clickSquare(36); // e2-e4
   check('chess: e4 のあと AI が応手する', K.getHistory().length === 2, `history=${K.getHistory().join(' ')}`);
   check('chess: 棋譜に e4 がある', K.getHistory()[0] === 'e4', K.getHistory().join(' '));
+  check('chess: 手を指すと棋譜コピーが押せる', cels['copy-moves'].disabled === false, `disabled=${cels['copy-moves'].disabled}`);
+  const copied = K.copyMoves();
+  check('chess: 棋譜コピーはSANのテキストを返す', copied.startsWith('1. e4 '), copied);
+  check('chess: 棋譜がクリップボードに渡る', clipboardText === copied, `clipboard=${clipboardText}`);
   K.loadFEN('rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 2');
   K.clickSquare(36); K.clickSquare(27); // exd5
   check('chess: exd5 で取った駒の価値が1', K.capturedValue(1) === 1, `value=${K.capturedValue(1)}`);
@@ -365,6 +381,7 @@ try {
   check('chess: Qxf7# でチェックメイト', K.isOver() === true && K.getStatus().includes('チェックメイト'), K.getStatus());
   K.undo();
   check('chess: 待ったでメイト前に戻る', K.isOver() === false && K.getHistory().length === 0, `history=${K.getHistory().join(' ')}`);
+  check('chess: 履歴が空になると棋譜コピーがまた押せない', cels['copy-moves'].disabled === true, `disabled=${cels['copy-moves'].disabled}`);
 } catch (e) {
   check('chess.js: スタブ対局の確認', false, String(e && e.stack || e));
 }
