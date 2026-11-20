@@ -25,6 +25,7 @@
   var movesEl = $('moves');
   var capWhiteEl = $('cap-white');
   var capBlackEl = $('cap-black');
+  var materialEl = $('material');
   var waterWhiteEl = $('water-white');
   var waterBlackEl = $('water-black');
   var levelEl = $('level');
@@ -82,6 +83,10 @@
     waterBlackEl.style.height = Math.min(100, Math.round(bv / MAX_CAPTURE_VALUE * 100)) + '%';
     waterWhiteEl.parentElement.title = '白が取った駒の価値: ' + wv;
     waterBlackEl.parentElement.title = '黒が取った駒の価値: ' + bv;
+    if (materialEl) {
+      var diff = wv - bv;
+      materialEl.textContent = diff === 0 ? '互角' : (diff > 0 ? '白 +' + diff : '黒 +' + (-diff));
+    }
   }
 
   // 棋譜を行の配列にする（表示とコピーの両方で使う）

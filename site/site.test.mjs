@@ -338,7 +338,7 @@ try {
       setAttribute() {},
     };
   }
-  const cids = ['board', 'status', 'moves', 'cap-white', 'cap-black', 'water-white', 'water-black', 'level', 'undo', 'newgame', 'copy-moves'];
+  const cids = ['board', 'status', 'moves', 'cap-white', 'cap-black', 'material', 'water-white', 'water-black', 'level', 'undo', 'newgame', 'copy-moves'];
   const cels = Object.fromEntries(cids.map(id => [id, chessEl(id)]));
   let clipboardText = null;
   const csb = {
@@ -362,6 +362,7 @@ try {
   const K = csb.KinakoChess;
   check('chess: 初期局面は START_FEN', K.getFEN() === csb.ChessEngine.START_FEN, K.getFEN());
   check('chess: 盤は64マス', cels.board.children.length === 64, `squares=${cels.board.children.length}`);
+  check('chess: 最初は駒の価値が互角', cels.material.textContent === '互角', cels.material.textContent);
   check('chess: 手が無いうちは棋譜コピーが押せない', cels['copy-moves'].disabled === true, `disabled=${cels['copy-moves'].disabled}`);
   check('chess: 手が無いうちはコピーする文字が無い', K.copyMoves() === '' && K.getMovesText() === '');
   K.clickSquare(52); K.clickSquare(36); // e2-e4
@@ -376,11 +377,13 @@ try {
   check('chess: exd5 で取った駒の価値が1', K.capturedValue(1) === 1, `value=${K.capturedValue(1)}`);
   check('chess: 取るとグラスの水位が上がる', cels['water-white'].style.height === '3%', `height=${cels['water-white'].style.height}`);
   check('chess: 取った駒が表示される', cels['cap-white'].textContent.includes('\u265F'), cels['cap-white'].textContent);
+  check('chess: exd5 で駒の価値が白 +1', cels.material.textContent === '白 +1', cels.material.textContent);
   K.loadFEN('r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1');
   K.clickSquare(31); K.clickSquare(13); // Qxf7#
   check('chess: Qxf7# でチェックメイト', K.isOver() === true && K.getStatus().includes('チェックメイト'), K.getStatus());
   K.undo();
   check('chess: 待ったでメイト前に戻る', K.isOver() === false && K.getHistory().length === 0, `history=${K.getHistory().join(' ')}`);
+  check('chess: 待ったで駒の価値が互角に戻る', cels.material.textContent === '互角', cels.material.textContent);
   check('chess: 履歴が空になると棋譜コピーがまた押せない', cels['copy-moves'].disabled === true, `disabled=${cels['copy-moves'].disabled}`);
 } catch (e) {
   check('chess.js: スタブ対局の確認', false, String(e && e.stack || e));

@@ -3,7 +3,7 @@
 // build-site.mjs が全ページのタブバー／フッター／head に配る。
 // ページを増やすときも、まずここに1行足してから build する。
 
-export const VERSION = '1.2.1';
+export const VERSION = '1.2.2';
 
 export const SITE_NAME = 'きなこのサイト';
 
