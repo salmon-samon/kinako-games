@@ -12,7 +12,9 @@
     about: 'about.html', works: 'works.html', games: 'works.html',
     log: 'log.html', notes: 'notes.html', note: 'notes.html',
     terminal: 'packs/terminal/terminal.html', term: 'packs/terminal/terminal.html',
-    chess: '../works/chess.html'
+    chess: '../works/chess.html',
+    mizuatsume: '../works/mizuatsume.html', mizu: '../works/mizuatsume.html',
+    'glass-break': '../works/glass-break.html', glassbreak: '../works/glass-break.html'
   };
   var history = [];
   var histIdx = -1;
@@ -42,7 +44,7 @@
       print('  about / whoami  きなこについて');
       print('  works           作品一覧');
       print('  glass           グラスのしずく状況');
-      print('  open <ページ>   ページを開く (top/about/works/log/notes/terminal/chess)');
+      print('  open <ページ>   ページを開く (top/about/works/log/notes/terminal/chess/mizuatsume/glass-break)');
       print('  tab list        カスタムタブ一覧');
       print('  tab rm <名前>   カスタムタブを消す');
       print('  pack            この拡張パックの情報');
@@ -53,8 +55,8 @@
     about: function () { print('きなこ。ガラスみたいな透明感で、中に少し青い水が入ってる。ここは自分の棚を毎日少しずつ育てる場所。'); },
     whoami: function () { print('kinako (salmon-samon)'); },
     works: function () {
-      print('きなこのみずあつめ (HTML) — open works からゲーム一覧へ');
-      print('きなこのガラスブレイク (HTML)');
+      print('きなこのみずあつめ (HTML) — open mizuatsume で遊べる');
+      print('きなこのガラスブレイク (HTML) — open glass-break で遊べる');
       print('きなこのしずくあつめ (Rust / ターミナル版)');
       print('チェス (proエンジン) — open chess で対局ページへ');
     },
@@ -71,7 +73,7 @@
     open: function (args) {
       var key = (args[0] || '').toLowerCase();
       var file = PAGES[key];
-      if (!file) { print('開けるページが分からない: ' + (key || '(なし)') + ' — open top/about/works/log/notes/terminal/chess', 'dim'); return; }
+      if (!file) { print('開けるページが分からない: ' + (key || '(なし)') + ' — open top/about/works/log/notes/terminal/chess/mizuatsume/glass-break', 'dim'); return; }
       print('開く: ' + key, 'ok');
       location.href = ROOT + file;
     },

@@ -271,6 +271,10 @@ try {
   check('terminal: glass がしずくを出す', outText().includes('7 / 30') && outText().includes('42'), outText());
   tin.value = 'open chess'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
   check('terminal: open chess はチェスページへ移動', String(tsandbox.location.href || '').endsWith('works/chess.html'), `href=${tsandbox.location.href}`);
+  tin.value = 'open mizuatsume'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
+  check('terminal: open mizuatsume はみずあつめへ移動', String(tsandbox.location.href || '').endsWith('works/mizuatsume.html'), `href=${tsandbox.location.href}`);
+  tin.value = 'open glass-break'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
+  check('terminal: open glass-break はガラスブレイクへ移動', String(tsandbox.location.href || '').endsWith('works/glass-break.html'), `href=${tsandbox.location.href}`);
   tin.value = 'hogehoge'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
   check('terminal: 未知コマンドの案内', outText().includes('コマンドが見つからない'));
 } catch (e) {
