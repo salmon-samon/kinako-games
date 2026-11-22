@@ -8,6 +8,12 @@
 
 バージョンは各ページのフッターに表示し、MINOR以上の節目では git タグ（vX.Y.Z）も打つ。
 
+## v1.2.4 - 2026-11-22
+- チェスのAI思考を Web Worker 化（使い勝手の改善なので PATCH）：`works/chess-worker.js` を追加し、思考をメインスレッドの外に出した。「つよい」でも思考中に画面や盤面操作が固まらない。エンジン本体（rookie1.0-pro.4）は無変更で、強さ・指し手は従来と同じ
+- メインスレッドとの受け渡しは FEN と指し手（from/to/promo）のメッセージのみ（SharedArrayBuffer は使わないので、ヘッダ設定の無い GitHub Pages でも動く）。Worker 内に局面を保持して履歴を引き継ぎ、ズレたら FEN で合わせ直す。思考中に「最初から」などで局面を作り直した場合は、古い応答をリクエストIDの照合で捨てる
+- Worker が使えない環境では従来どおり同期実行にフォールバックする（エラー時も自動で切り替わる）
+- `site.test.mjs` に Worker のチェックを追加（ファイル存在・構文・chess.js の配線、スタブでの sync → think 往復の指し手と着手後FENが同期実行と一致すること）
+
 ## v1.2.3 - 2026-11-22
 - ターミナルで `open` できる作品を増やした（小さい使い勝手の改善なので PATCH）：`open mizuatsume`（`mizu` でも可）できなこのみずあつめへ、`open glass-break`（`glassbreak` でも可）できなこのガラスブレイクへ移動できる。`works` の案内と help の一覧も更新した
 - `site.test.mjs` にターミナルの open のチェックを追加（mizuatsume・glass-break への移動）

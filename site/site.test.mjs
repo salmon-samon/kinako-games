@@ -286,9 +286,11 @@ const worksDir = resolve(siteDir, '..', 'works');
 const chessHtmlPath = resolve(worksDir, 'chess.html');
 const chessEnginePath = resolve(worksDir, 'chess-engine.js');
 const chessJsPath = resolve(worksDir, 'chess.js');
+const chessWorkerPath = resolve(worksDir, 'chess-worker.js');
 check('chess: works/chess.html が存在', existsSync(chessHtmlPath));
 check('chess: works/chess-engine.js が存在', existsSync(chessEnginePath));
 check('chess: works/chess.js が存在', existsSync(chessJsPath));
+check('chess: works/chess-worker.js が存在', existsSync(chessWorkerPath));
 // works.html からのリンクが実ファイルに届く（6のリンク解決も site/ 配下を見るが、ここで明示する）
 const worksHtml = readFileSync(resolve(siteDir, 'works.html'), 'utf8');
 check('chess: works.html にチェスの行がある', worksHtml.includes('../works/chess.html') && worksHtml.includes('きなこのチェス'));
@@ -303,7 +305,12 @@ if (existsSync(chessHtmlPath)) {
   check('chess: chess.html に盤・グラス・棋譜がある', chtml.includes('id="board"') && chtml.includes('id="water-white"') && chtml.includes('id="moves"'));
   check('chess: chess.html に棋譜コピーボタンがある', chtml.includes('id="copy-moves"'));
 }
-for (const js of [chessEnginePath, chessJsPath]) {
+if (existsSync(chessJsPath)) {
+  const cjs = readFileSync(chessJsPath, 'utf8');
+  check('chess: chess.js が Worker を使う', cjs.includes('chess-worker.js'));
+  check('chess: chess.js に同期フォールバックがある', cjs.includes('aiMoveSync'));
+}
+for (const js of [chessEnginePath, chessJsPath, chessWorkerPath]) {
   try {
     execFileSync(process.execPath, ['--check', js], { stdio: 'pipe' });
     check(`chess: ${js.split('/').pop()} 構文チェック`, true);
@@ -321,6 +328,32 @@ try {
   check('chess: エンジン VERSION は rookie1.0-pro.4', esb.ChessEngine.VERSION === 'rookie1.0-pro.4', esb.ChessEngine.VERSION);
 } catch (e) {
   check('chess: エンジン selfTest', false, String(e && e.stack || e));
+}
+// chess-worker.js をスタブで動かす: sync → think の往復で、指し手と着手後FENが同期実行と一致する
+// （局面は fullmove 4 以上・ノイズ無しレベル13で、エンジンの決定的な範囲だけを比べる）
+try {
+  const wfen = 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4';
+  const dsb = {};
+  vm.createContext(dsb);
+  vm.runInContext(readFileSync(chessEnginePath, 'utf8'), dsb, { filename: 'chess-engine.js' });
+  const dPos = new dsb.ChessEngine.Pos(); dPos.loadFEN(wfen);
+  const direct = dsb.ChessEngine.chooseMove(dPos, 13, 0, 0);
+  dPos.make(direct);
+  const replies = [];
+  const wsb = {};
+  wsb.self = wsb;
+  wsb.importScripts = () => { vm.runInContext(readFileSync(chessEnginePath, 'utf8'), wsb, { filename: 'chess-engine.js' }); };
+  wsb.postMessage = m => replies.push(m);
+  vm.createContext(wsb);
+  vm.runInContext(readFileSync(chessWorkerPath, 'utf8'), wsb, { filename: 'chess-worker.js' });
+  wsb.onmessage({ data: { type: 'sync', fen: wfen } });
+  wsb.onmessage({ data: { type: 'think', id: 42, fen: wfen, level: 13 } });
+  const rep = replies.find(r => r.type === 'move');
+  check('chess: Worker が think に応答する', !!rep && rep.id === 42, JSON.stringify(replies));
+  check('chess: Worker の指し手が同期実行と一致', !!rep && !!direct && rep.move.from === direct.from && rep.move.to === direct.to && (rep.move.promo || 0) === (direct.promo || 0), `worker=${JSON.stringify(rep && rep.move)} direct=${direct && (direct.from + '>' + direct.to)}`);
+  check('chess: Worker の着手後FENが同期側と一致', !!rep && rep.fen === dPos.toFEN(), `worker=${rep && rep.fen} direct=${dPos.toFEN()}`);
+} catch (e) {
+  check('chess-worker.js: スタブ往復の確認', false, String(e && e.stack || e));
 }
 // chess.js をスタブで動かす: e4 → AI応手、取り駒と水位、Qxf7# のメイト
 try {

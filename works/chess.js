@@ -1,6 +1,8 @@
 /* きなこのチェス — 対局ロジック（UI側）。
    エンジン本体は works/chess-engine.js（rookie1.0-pro、無変更）。
-   ここは見た目の裏側だけ：白＝プレイヤー、黒＝AI。思考はエンジンの chooseMove に任せる。
+   ここは見た目の裏側だけ：白＝プレイヤー、黒＝AI。
+   AIの思考は Web Worker（works/chess-worker.js）の中でエンジンに任せ、
+   思考中も画面が固まらないようにする。Worker が使えない環境では従来どおり同期実行する。
    駒の値: P=1 N=3 B=3 R=5 Q=9（グラスの水位に使う）。 */
 (function () {
   'use strict';
@@ -45,6 +47,12 @@
   var thinking = false;
   var over = false;
   var lastMove = null;
+
+  // AI思考用 Worker（思考中も画面・盤面操作が固まらないようにする）。
+  // 使えない環境では従来どおりメインスレッドで同期実行する。
+  var aiWorker = null;
+  var aiWorkerBroken = false;
+  var thinkId = 0; // 思考リクエストの照合 ID。局面を作り直すたびに進めて古い応答を捨てる
 
   function sqName(sq) { return FILES[sq & 7] + (8 - (sq >> 3)); }
 
@@ -212,22 +220,97 @@
     copyBtn.disabled = history.length === 0;
   }
 
-  function doMove(m) {
+  function doMove(m, skipNotify) {
+    var fenBefore = pos.toFEN();
     var san = E.toSAN(pos, m, legalHere);
     pos.make(m);
     history.push({ m: m, san: san });
     lastMove = m;
     selected = -1;
+    if (!skipNotify) notifyWorkerMove(m, fenBefore, pos.toFEN());
     refresh();
   }
 
-  function aiMove(ed) {
+  // ---- Worker まわり ----
+  function getWorker() {
+    if (aiWorker || aiWorkerBroken) return aiWorker;
+    try {
+      if (typeof Worker === 'undefined') { aiWorkerBroken = true; return null; }
+      aiWorker = new Worker('chess-worker.js');
+      aiWorker.onmessage = onWorkerMessage;
+      aiWorker.onerror = function () { onWorkerError(); };
+    } catch (e) {
+      aiWorkerBroken = true;
+      aiWorker = null;
+    }
+    return aiWorker;
+  }
+
+  function onWorkerError() {
+    aiWorkerBroken = true;
+    if (aiWorker) {
+      try { aiWorker.terminate(); } catch (e) { /* 終了できなくても同期実行に切り替わるだけ */ }
+      aiWorker = null;
+    }
+    // 思考中だったら、その場で同期実行に切り替えて対局を止めない
+    if (thinking) aiMoveSync(0);
+  }
+
+  function notifyWorkerMove(m, fenBefore, fenAfter) {
+    var w = getWorker();
+    if (!w) return;
+    try {
+      w.postMessage({
+        type: 'apply',
+        move: { from: m.from, to: m.to, promo: m.promo || 0 },
+        fenBefore: fenBefore, fenAfter: fenAfter
+      });
+    } catch (e) { onWorkerError(); }
+  }
+
+  // 局面を作り直したときに Worker 側も合わせ直し、思考中だった応答を無効化する
+  function syncWorker() {
+    thinkId++;
+    var w = getWorker();
+    if (!w) return;
+    try { w.postMessage({ type: 'sync', fen: pos.toFEN() }); } catch (e) { onWorkerError(); }
+  }
+
+  function onWorkerMessage(ev) {
+    var msg = ev.data || {};
+    if (msg.type === 'error') { onWorkerError(); return; }
+    if (msg.type !== 'move') return;
+    if (!thinking || msg.id !== thinkId) return; // 古い応答は捨てる
+    thinking = false;
+    if (!msg.move) { refresh(); return; }
+    var m = null;
+    for (var i = 0; i < legalHere.length; i++) {
+      var cand = legalHere[i];
+      if (cand.from === msg.move.from && cand.to === msg.move.to && (cand.promo || 0) === (msg.move.promo || 0)) { m = cand; break; }
+    }
+    if (!m) { refresh(); return; }
+    doMove(m, true); // Worker 側は着手済みなので apply は送らない
+  }
+
+  // 従来どおりメインスレッドで考える（Worker が使えない環境向け）
+  function aiMoveSync(ed) {
     if (over) { thinking = false; return; }
     var lv = currentLevel();
     var m = E.chooseMove(pos, lv.level, 0, ed || 0);
     thinking = false;
     if (!m) { refresh(); return; }
     doMove(m);
+  }
+
+  function aiMove(ed) {
+    if (ed) { aiMoveSync(ed); return; }
+    if (over) { thinking = false; return; }
+    var w = getWorker();
+    if (!w) { aiMoveSync(0); return; }
+    var id = ++thinkId;
+    try {
+      w.postMessage({ type: 'think', id: id, fen: pos.toFEN(), level: currentLevel().level });
+    } catch (e) { onWorkerError(); }
   }
 
   function maybeAi() {
@@ -272,6 +355,7 @@
     over = false;
     lastMove = history.length ? history[history.length - 1].m : null;
     selected = -1;
+    syncWorker();
     refresh();
   }
 
@@ -283,6 +367,7 @@
     thinking = false;
     over = false;
     lastMove = null;
+    syncWorker();
     refresh();
   }
 
@@ -332,6 +417,7 @@
       thinking = false;
       over = false;
       lastMove = null;
+      syncWorker();
       refresh();
     },
     capturedValue: function (color) { return capturedValue(capturedBy(color)); },
