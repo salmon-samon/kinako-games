@@ -304,6 +304,7 @@ if (existsSync(chessHtmlPath)) {
   check('chess: chess.html が chess.js を読む', chtml.includes('src="chess.js"'));
   check('chess: chess.html に盤・グラス・棋譜がある', chtml.includes('id="board"') && chtml.includes('id="water-white"') && chtml.includes('id="moves"'));
   check('chess: chess.html に棋譜コピーボタンがある', chtml.includes('id="copy-moves"'));
+  check('chess: chess.html に通算成績パネルがある', chtml.includes('id="record"') && chtml.includes('id="reset-record"'));
 }
 if (existsSync(chessJsPath)) {
   const cjs = readFileSync(chessJsPath, 'utf8');
@@ -375,13 +376,19 @@ try {
       setAttribute() {},
     };
   }
-  const cids = ['board', 'status', 'moves', 'cap-white', 'cap-black', 'material', 'water-white', 'water-black', 'level', 'undo', 'newgame', 'copy-moves'];
+  const cids = ['board', 'status', 'moves', 'cap-white', 'cap-black', 'material', 'water-white', 'water-black', 'level', 'undo', 'newgame', 'copy-moves', 'record', 'reset-record'];
   const cels = Object.fromEntries(cids.map(id => [id, chessEl(id)]));
   let clipboardText = null;
+  const store = new Map();
   const csb = {
     document: {
       getElementById: id => cels[id] || null,
       createElement: () => chessEl(''),
+    },
+    localStorage: {
+      getItem: k => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => { store.set(k, String(v)); },
+      removeItem: k => { store.delete(k); },
     },
     navigator: {
       clipboard: {
@@ -400,6 +407,7 @@ try {
   check('chess: 初期局面は START_FEN', K.getFEN() === csb.ChessEngine.START_FEN, K.getFEN());
   check('chess: 盤は64マス', cels.board.children.length === 64, `squares=${cels.board.children.length}`);
   check('chess: 最初は駒の価値が互角', cels.material.textContent === '互角', cels.material.textContent);
+  check('chess: 最初は通算成績がまだ無い', cels.record.textContent === 'まだ対局はないよ' && K.getRecord().w === 0 && K.getRecord().l === 0 && K.getRecord().d === 0, cels.record.textContent);
   check('chess: 手が無いうちは棋譜コピーが押せない', cels['copy-moves'].disabled === true, `disabled=${cels['copy-moves'].disabled}`);
   check('chess: 手が無いうちはコピーする文字が無い', K.copyMoves() === '' && K.getMovesText() === '');
   K.clickSquare(52); K.clickSquare(36); // e2-e4
@@ -410,16 +418,29 @@ try {
   check('chess: 棋譜コピーはSANのテキストを返す', copied.startsWith('1. e4 '), copied);
   check('chess: 棋譜がクリップボードに渡る', clipboardText === copied, `clipboard=${clipboardText}`);
   K.loadFEN('rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 2');
-  K.clickSquare(36); K.clickSquare(27); // exd5
+  K.clickSquare(36); K.clickSquare(27); // exd5（AIの応手は乱数で変わるので、表示は取った駒と照合する）
   check('chess: exd5 で取った駒の価値が1', K.capturedValue(1) === 1, `value=${K.capturedValue(1)}`);
   check('chess: 取るとグラスの水位が上がる', cels['water-white'].style.height === '3%', `height=${cels['water-white'].style.height}`);
   check('chess: 取った駒が表示される', cels['cap-white'].textContent.includes('\u265F'), cels['cap-white'].textContent);
-  check('chess: exd5 で駒の価値が白 +1', cels.material.textContent === '白 +1', cels.material.textContent);
+  const mdiff = K.capturedValue(1) - K.capturedValue(-1);
+  const mexpected = mdiff === 0 ? '互角' : (mdiff > 0 ? '白 +' + mdiff : '黒 +' + (-mdiff));
+  check('chess: exd5 のあと駒の価値の表示が取った駒と一致する', cels.material.textContent === mexpected, `material=${cels.material.textContent} expected=${mexpected}`);
   K.loadFEN('r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1');
   K.clickSquare(31); K.clickSquare(13); // Qxf7#
   check('chess: Qxf7# でチェックメイト', K.isOver() === true && K.getStatus().includes('チェックメイト'), K.getStatus());
+  check('chess: 勝つと通算成績に1勝が記録される', K.getRecord().w === 1 && cels.record.textContent === '1勝 0敗 0分', cels.record.textContent);
+  check('chess: 成績は localStorage に保存される', store.get('kinako-chess-record') === JSON.stringify({ w: 1, l: 0, d: 0 }), store.get('kinako-chess-record'));
   K.undo();
   check('chess: 待ったでメイト前に戻る', K.isOver() === false && K.getHistory().length === 0, `history=${K.getHistory().join(' ')}`);
+  check('chess: 待ったで成績は消えない', K.getRecord().w === 1, cels.record.textContent);
+  K.clickSquare(31); K.clickSquare(13); // もう一度 Qxf7#
+  check('chess: もう一度勝つと2勝になる', K.getRecord().w === 2 && cels.record.textContent === '2勝 0敗 0分', cels.record.textContent);
+  K.newGame();
+  check('chess: 最初からでも成績は残る', K.getRecord().w === 2 && cels.record.textContent === '2勝 0敗 0分', cels.record.textContent);
+  K.loadFEN('7k/5Q2/6K1/8/8/8/8/8 b - - 0 1'); // ステイルメイト
+  check('chess: ステイルメイトは引き分けで記録される', K.isOver() === true && K.getRecord().d === 1 && cels.record.textContent === '2勝 0敗 1分', cels.record.textContent);
+  cels['reset-record'].fire('click');
+  check('chess: 成績リセットで0勝0敗0分に戻る', K.getRecord().w === 0 && K.getRecord().d === 0 && cels.record.textContent === 'まだ対局はないよ', cels.record.textContent);
   check('chess: 待ったで駒の価値が互角に戻る', cels.material.textContent === '互角', cels.material.textContent);
   check('chess: 履歴が空になると棋譜コピーがまた押せない', cels['copy-moves'].disabled === true, `disabled=${cels['copy-moves'].disabled}`);
 } catch (e) {

@@ -34,6 +34,41 @@
   var undoBtn = $('undo');
   var newBtn = $('newgame');
   var copyBtn = $('copy-moves');
+  var recordEl = $('record');
+  var resetRecordBtn = $('reset-record');
+
+  // 通算成績：対局が決着するたびに localStorage にためる（白＝プレイヤー）。
+  var RECORD_KEY = 'kinako-chess-record';
+  function loadRecord() {
+    var rec = { w: 0, l: 0, d: 0 };
+    try {
+      if (typeof localStorage === 'undefined') return rec;
+      var raw = localStorage.getItem(RECORD_KEY);
+      if (!raw) return rec;
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return rec;
+      rec.w = Math.max(0, parseInt(parsed.w, 10) || 0);
+      rec.l = Math.max(0, parseInt(parsed.l, 10) || 0);
+      rec.d = Math.max(0, parseInt(parsed.d, 10) || 0);
+    } catch (e) { /* 読めないときは 0勝0敗0分として扱う */ }
+    return rec;
+  }
+  function saveRecord(rec) {
+    try {
+      if (typeof localStorage === 'undefined') return;
+      localStorage.setItem(RECORD_KEY, JSON.stringify(rec));
+    } catch (e) { /* 保存できない環境では成績だけ表示しない */ }
+  }
+  function renderRecord() {
+    if (!recordEl) return;
+    var rec = loadRecord();
+    var total = rec.w + rec.l + rec.d;
+    recordEl.textContent = total === 0 ? 'まだ対局はないよ' : rec.w + '勝 ' + rec.l + '敗 ' + rec.d + '分';
+  }
+  function resetRecord() {
+    saveRecord({ w: 0, l: 0, d: 0 });
+    renderRecord();
+  }
 
   if (!E) {
     if (statusEl) statusEl.textContent = 'エンジンが読み込めなかった。chess-engine.js を確認してね。';
@@ -46,6 +81,7 @@
   var legalHere = []; // 今の局面の合法手
   var thinking = false;
   var over = false;
+  var recorded = false; // この対局の決着を成績に記録したか（待ったで戻すと false に戻る）
   var lastMove = null;
 
   // AI思考用 Worker（思考中も画面・盤面操作が固まらないようにする）。
@@ -184,16 +220,42 @@
     }
   }
 
+  // 決着の種類：'win'（白＝プレイヤーの勝ち）/ 'loss'（負け）/ 'draw'（引き分け）/ null（続行）
+  function endResult() {
+    if (pos.insufficient()) return 'draw';
+    if (pos.isRepetition && pos.isRepetition()) return 'draw';
+    if (typeof pos.half === 'number' && pos.half >= 100) return 'draw';
+    if (!pos.hasLegalMove()) {
+      if (pos.inCheck()) return pos.turn === 1 ? 'loss' : 'win';
+      return 'draw';
+    }
+    return null;
+  }
+
   function endMessage() {
     // 返すのは null（続行）か、終わったときの文言
+    var r = endResult();
+    if (!r) return null;
+    if (r === 'win') return '白の勝ち — チェックメイト！';
+    if (r === 'loss') return '黒の勝ち — チェックメイト！';
     if (pos.insufficient()) return '引き分け — 駒が足りないよ。';
     if (pos.isRepetition && pos.isRepetition()) return '引き分け — 同じ局面が3回出たよ。';
     if (typeof pos.half === 'number' && pos.half >= 100) return '引き分け — 50手ルール。';
-    if (!pos.hasLegalMove()) {
-      if (pos.inCheck()) return (pos.turn === 1 ? '黒の勝ち' : '白の勝ち') + ' — チェックメイト！';
-      return '引き分け — ステイルメイト。';
-    }
-    return null;
+    return '引き分け — ステイルメイト。';
+  }
+
+  // 決着したら通算成績に1回だけ記録する
+  function recordResult() {
+    if (recorded) return;
+    var r = endResult();
+    if (!r) return;
+    recorded = true;
+    var rec = loadRecord();
+    if (r === 'win') rec.w++;
+    else if (r === 'loss') rec.l++;
+    else rec.d++;
+    saveRecord(rec);
+    renderRecord();
   }
 
   function refresh() {
@@ -205,6 +267,7 @@
     var end = endMessage();
     if (end) {
       over = true;
+      recordResult();
       statusEl.textContent = end;
       undoBtn.disabled = false;
       return;
@@ -353,6 +416,7 @@
       if (pos.turn === 1) break; // 白の番まで戻す（AIの手＋自分の手＝最大2手）
     }
     over = false;
+    recorded = false;
     lastMove = history.length ? history[history.length - 1].m : null;
     selected = -1;
     syncWorker();
@@ -366,6 +430,7 @@
     selected = -1;
     thinking = false;
     over = false;
+    recorded = false;
     lastMove = null;
     syncWorker();
     refresh();
@@ -394,9 +459,11 @@
   undoBtn.addEventListener('click', undo);
   newBtn.addEventListener('click', newGame);
   copyBtn.addEventListener('click', copyMoves);
+  if (resetRecordBtn) resetRecordBtn.addEventListener('click', resetRecord);
   if (levelEl) levelEl.addEventListener('change', function () { if (!thinking) refresh(); });
 
   newGame();
+  renderRecord();
 
   // テスト用の小さな窓口（vm スタブから動かせる）
   globalThis.KinakoChess = {
@@ -416,12 +483,15 @@
       selected = -1;
       thinking = false;
       over = false;
+      recorded = false;
       lastMove = null;
       syncWorker();
       refresh();
     },
     capturedValue: function (color) { return capturedValue(capturedBy(color)); },
     getMovesText: movesText,
-    copyMoves: copyMoves
+    copyMoves: copyMoves,
+    getRecord: loadRecord,
+    resetRecord: resetRecord
   };
 })();
