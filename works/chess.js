@@ -36,6 +36,7 @@
   var copyBtn = $('copy-moves');
   var recordEl = $('record');
   var resetRecordBtn = $('reset-record');
+  var soundBtn = $('sound-toggle');
 
   // 通算成績：対局が決着するたびに localStorage にためる（白＝プレイヤー）。
   var RECORD_KEY = 'kinako-chess-record';
@@ -68,6 +69,62 @@
   function resetRecord() {
     saveRecord({ w: 0, l: 0, d: 0 });
     renderRecord();
+  }
+
+  // 音：WebAudio で指し手の音を鳴らす（素材ファイルは使わない）。
+  // 種類: 'move'（指し手）/ 'capture'（取る）/ 'check'（チェック）/ 'win' / 'loss' / 'draw'（決着）。
+  var SOUND_KEY = 'kinako-chess-sound';
+  var soundOn = loadSound();
+  var audioCtx = null;
+  var soundLog = []; // 鳴らした音の種類を順にためる（テスト用の窓口。実際の音とは別）
+  function loadSound() {
+    try {
+      if (typeof localStorage !== 'undefined' && localStorage.getItem(SOUND_KEY) === 'off') return false;
+    } catch (e) { /* 読めないときはオンとして扱う */ }
+    return true;
+  }
+  function saveSound(on) {
+    try {
+      if (typeof localStorage !== 'undefined') localStorage.setItem(SOUND_KEY, on ? 'on' : 'off');
+    } catch (e) { /* 保存できない環境では切り替えだけその場で効く */ }
+  }
+  function renderSound() {
+    if (soundBtn) soundBtn.textContent = soundOn ? '音：オン' : '音：オフ';
+  }
+  function toggleSound() {
+    soundOn = !soundOn;
+    saveSound(soundOn);
+    renderSound();
+  }
+  function tone(freq, dur, type, gain, delay) {
+    if (!audioCtx) return;
+    var t0 = audioCtx.currentTime + (delay || 0);
+    var o = audioCtx.createOscillator();
+    var g = audioCtx.createGain();
+    o.type = type || 'sine';
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(gain || 0.08, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    o.connect(g);
+    g.connect(audioCtx.destination);
+    o.start(t0);
+    o.stop(t0 + dur + 0.02);
+  }
+  function playSound(kind) {
+    if (!soundOn) return;
+    soundLog.push(kind);
+    try {
+      var AC = (typeof AudioContext !== 'undefined') ? AudioContext : (typeof webkitAudioContext !== 'undefined' ? webkitAudioContext : null);
+      if (!AC) return; // 音が出せない環境では鳴らした種類だけ記録する
+      if (!audioCtx) audioCtx = new AC();
+      if (audioCtx.resume) audioCtx.resume();
+      if (kind === 'move') tone(660, 0.07, 'sine', 0.08);
+      else if (kind === 'capture') { tone(220, 0.1, 'triangle', 0.12); tone(160, 0.12, 'sine', 0.08, 0.02); }
+      else if (kind === 'check') { tone(880, 0.09, 'sine', 0.1); tone(1174, 0.14, 'sine', 0.1, 0.09); }
+      else if (kind === 'win') { tone(523, 0.12, 'sine', 0.1); tone(659, 0.12, 'sine', 0.1, 0.12); tone(784, 0.2, 'sine', 0.1, 0.24); }
+      else if (kind === 'loss') { tone(392, 0.14, 'sine', 0.1); tone(311, 0.2, 'sine', 0.1, 0.14); }
+      else if (kind === 'draw') { tone(440, 0.12, 'sine', 0.08); tone(440, 0.16, 'sine', 0.08, 0.14); }
+    } catch (e) { /* 音が出せない環境では静かにする */ }
   }
 
   if (!E) {
@@ -263,13 +320,15 @@
     renderBoard();
     renderCaptured();
     renderMoves();
+    // ボタンの有効・無効は決着時も更新する（決着で早期 return する前に決める）
+    undoBtn.disabled = history.length === 0 || thinking;
+    copyBtn.disabled = history.length === 0;
     if (over) return;
     var end = endMessage();
     if (end) {
       over = true;
       recordResult();
       statusEl.textContent = end;
-      undoBtn.disabled = false;
       return;
     }
     if (pos.inCheck()) {
@@ -279,8 +338,6 @@
     } else {
       statusEl.textContent = (pos.turn === 1 ? '白' : '黒') + 'の番';
     }
-    undoBtn.disabled = history.length === 0 || thinking;
-    copyBtn.disabled = history.length === 0;
   }
 
   function doMove(m, skipNotify) {
@@ -290,8 +347,18 @@
     history.push({ m: m, san: san });
     lastMove = m;
     selected = -1;
+    playSound(moveSoundKind(m));
     if (!skipNotify) notifyWorkerMove(m, fenBefore, pos.toFEN());
     refresh();
+  }
+
+  // この手に付ける音の種類：決着＞チェック＞取る＞ふつうの手
+  function moveSoundKind(m) {
+    var r = endResult();
+    if (r) return r; // 'win' / 'loss' / 'draw'
+    if (pos.inCheck()) return 'check';
+    if (m.cap) return 'capture';
+    return 'move';
   }
 
   // ---- Worker まわり ----
@@ -460,10 +527,12 @@
   newBtn.addEventListener('click', newGame);
   copyBtn.addEventListener('click', copyMoves);
   if (resetRecordBtn) resetRecordBtn.addEventListener('click', resetRecord);
+  if (soundBtn) soundBtn.addEventListener('click', toggleSound);
   if (levelEl) levelEl.addEventListener('change', function () { if (!thinking) refresh(); });
 
   newGame();
   renderRecord();
+  renderSound();
 
   // テスト用の小さな窓口（vm スタブから動かせる）
   globalThis.KinakoChess = {
@@ -492,6 +561,9 @@
     getMovesText: movesText,
     copyMoves: copyMoves,
     getRecord: loadRecord,
-    resetRecord: resetRecord
+    resetRecord: resetRecord,
+    getSoundOn: function () { return soundOn; },
+    toggleSound: toggleSound,
+    getSoundLog: function () { return soundLog.slice(); }
   };
 })();
