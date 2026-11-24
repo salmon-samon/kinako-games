@@ -34,6 +34,7 @@
   var undoBtn = $('undo');
   var newBtn = $('newgame');
   var copyBtn = $('copy-moves');
+  var pgnBtn = $('download-pgn');
   var recordEl = $('record');
   var resetRecordBtn = $('reset-record');
   var soundBtn = $('sound-toggle');
@@ -247,6 +248,63 @@
     } catch (e) { /* コピーできなかったときは何もしない */ }
   }
 
+  // 対局の結果を PGN の Result にする（まだ決着してなければ '*'）
+  function pgnResult() {
+    var r = endResult();
+    if (r === 'win') return '1-0';
+    if (r === 'loss') return '0-1';
+    if (r === 'draw') return '1/2-1/2';
+    return '*';
+  }
+
+  // 棋譜を PGN 形式のテキストにして返す。手が無ければ空文字
+  function pgnText() {
+    if (!history.length) return '';
+    var d = new Date();
+    function two(n) { return (n < 10 ? '0' : '') + n; }
+    var date = d.getFullYear() + '.' + two(d.getMonth() + 1) + '.' + two(d.getDate());
+    var result = pgnResult();
+    var movetext = movesLines().join(' ') + ' ' + result;
+    return [
+      '[Event "きなこのチェス"]',
+      '[Site "きなこのサイト"]',
+      '[Date "' + date + '"]',
+      '[White "あなた"]',
+      '[Black "きなこのAI"]',
+      '[Result "' + result + '"]',
+      '',
+      movetext,
+      ''
+    ].join('\n');
+  }
+
+  // 棋譜を PGN ファイル（.pgn）としてダウンロードする。返り値は PGN テキスト（手が無ければ空文字）
+  function downloadPgn() {
+    var text = pgnText();
+    if (!text) return '';
+    var done = function () {
+      pgnBtn.textContent = '保存したよ';
+      setTimeout(function () { pgnBtn.textContent = '棋譜をPGNで保存'; }, 1500);
+    };
+    try {
+      if (typeof Blob !== 'undefined' && typeof URL !== 'undefined' && URL.createObjectURL) {
+        var blob = new Blob([text], { type: 'application/x-chess-pgn' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        var d = new Date();
+        function two(n) { return (n < 10 ? '0' : '') + n; }
+        a.href = url;
+        a.download = 'kinako-chess-' + d.getFullYear() + two(d.getMonth() + 1) + two(d.getDate()) + '.pgn';
+        if (document.body) document.body.appendChild(a);
+        if (a.click) a.click();
+        if (a.remove) a.remove();
+        if (URL.revokeObjectURL) setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        done();
+      }
+    } catch (e) { /* ダウンロードできない環境では何もしない */ }
+    return text;
+  }
+
   function renderBoard() {
     var squares = boardEl.children;
     var kingSq = -1;
@@ -323,6 +381,7 @@
     // ボタンの有効・無効は決着時も更新する（決着で早期 return する前に決める）
     undoBtn.disabled = history.length === 0 || thinking;
     copyBtn.disabled = history.length === 0;
+    pgnBtn.disabled = history.length === 0;
     if (over) return;
     var end = endMessage();
     if (end) {
@@ -526,6 +585,7 @@
   undoBtn.addEventListener('click', undo);
   newBtn.addEventListener('click', newGame);
   copyBtn.addEventListener('click', copyMoves);
+  pgnBtn.addEventListener('click', downloadPgn);
   if (resetRecordBtn) resetRecordBtn.addEventListener('click', resetRecord);
   if (soundBtn) soundBtn.addEventListener('click', toggleSound);
   if (levelEl) levelEl.addEventListener('change', function () { if (!thinking) refresh(); });
@@ -560,6 +620,8 @@
     capturedValue: function (color) { return capturedValue(capturedBy(color)); },
     getMovesText: movesText,
     copyMoves: copyMoves,
+    getPgnText: pgnText,
+    downloadPgn: downloadPgn,
     getRecord: loadRecord,
     resetRecord: resetRecord,
     getSoundOn: function () { return soundOn; },

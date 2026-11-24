@@ -304,6 +304,7 @@ if (existsSync(chessHtmlPath)) {
   check('chess: chess.html が chess.js を読む', chtml.includes('src="chess.js"'));
   check('chess: chess.html に盤・グラス・棋譜がある', chtml.includes('id="board"') && chtml.includes('id="water-white"') && chtml.includes('id="moves"'));
   check('chess: chess.html に棋譜コピーボタンがある', chtml.includes('id="copy-moves"'));
+  check('chess: chess.html にPGN保存ボタンがある', chtml.includes('id="download-pgn"'));
   check('chess: chess.html に音の切り替えボタンがある', chtml.includes('id="sound-toggle"'));
   check('chess: chess.html に通算成績パネルがある', chtml.includes('id="record"') && chtml.includes('id="reset-record"'));
 }
@@ -373,18 +374,26 @@ try {
       },
       addEventListener(t, fn) { (this._listeners[t] ||= []).push(fn); },
       fire(t, ev = {}) { for (const fn of this._listeners[t] || []) fn(ev); },
+      click() { this._clicked = true; },
       appendChild(c) { this.children.push(c); },
       setAttribute() {},
     };
   }
-  const cids = ['board', 'status', 'moves', 'cap-white', 'cap-black', 'material', 'water-white', 'water-black', 'level', 'undo', 'newgame', 'copy-moves', 'record', 'reset-record', 'sound-toggle'];
+  const cids = ['board', 'status', 'moves', 'cap-white', 'cap-black', 'material', 'water-white', 'water-black', 'level', 'undo', 'newgame', 'copy-moves', 'download-pgn', 'record', 'reset-record', 'sound-toggle'];
   const cels = Object.fromEntries(cids.map(id => [id, chessEl(id)]));
   let clipboardText = null;
+  let lastCreated = null;
+  let createdBlob = null;
   const store = new Map();
   const csb = {
     document: {
       getElementById: id => cels[id] || null,
-      createElement: () => chessEl(''),
+      createElement: () => { lastCreated = chessEl(''); return lastCreated; },
+    },
+    Blob: function (parts, opts) { this.parts = parts; this.type = opts && opts.type; },
+    URL: {
+      createObjectURL(b) { createdBlob = b; return 'blob:pgn'; },
+      revokeObjectURL() {},
     },
     localStorage: {
       getItem: k => (store.has(k) ? store.get(k) : null),
@@ -411,6 +420,8 @@ try {
   check('chess: 最初は通算成績がまだ無い', cels.record.textContent === 'まだ対局はないよ' && K.getRecord().w === 0 && K.getRecord().l === 0 && K.getRecord().d === 0, cels.record.textContent);
   check('chess: 手が無いうちは棋譜コピーが押せない', cels['copy-moves'].disabled === true, `disabled=${cels['copy-moves'].disabled}`);
   check('chess: 手が無いうちはコピーする文字が無い', K.copyMoves() === '' && K.getMovesText() === '');
+  check('chess: 手が無いうちはPGN保存が押せない', cels['download-pgn'].disabled === true, `disabled=${cels['download-pgn'].disabled}`);
+  check('chess: 手が無いうちはPGNが空', K.getPgnText() === '' && K.downloadPgn() === '');
   check('chess: 最初は音がオン', K.getSoundOn() === true && cels['sound-toggle'].textContent === '音：オン' && K.getSoundLog().length === 0, `sound=${K.getSoundOn()} log=${K.getSoundLog().join(',')}`);
   K.clickSquare(52); K.clickSquare(36); // e2-e4
   check('chess: e4 のあと AI が応手する', K.getHistory().length === 2, `history=${K.getHistory().join(' ')}`);
@@ -420,6 +431,10 @@ try {
   const copied = K.copyMoves();
   check('chess: 棋譜コピーはSANのテキストを返す', copied.startsWith('1. e4 '), copied);
   check('chess: 棋譜がクリップボードに渡る', clipboardText === copied, `clipboard=${clipboardText}`);
+  check('chess: 手を指すとPGN保存が押せる', cels['download-pgn'].disabled === false, `disabled=${cels['download-pgn'].disabled}`);
+  const pgnOngoing = K.getPgnText();
+  check('chess: PGNにはヘッダと棋譜が入る', pgnOngoing.includes('[Event "きなこのチェス"]') && pgnOngoing.includes('[Site "きなこのサイト"]') && pgnOngoing.includes('[Date "') && pgnOngoing.includes('[White "あなた"]') && pgnOngoing.includes('[Black "きなこのAI"]') && pgnOngoing.includes('1. e4 '), pgnOngoing);
+  check('chess: 決着前のPGNのResultは *', pgnOngoing.includes('[Result "*"]') && pgnOngoing.trimEnd().endsWith('*'), pgnOngoing);
   K.loadFEN('rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 2');
   const logBeforeExd5 = K.getSoundLog().length;
   K.clickSquare(36); K.clickSquare(27); // exd5（AIの応手は乱数で変わるので、表示は取った駒と照合する）
@@ -441,6 +456,12 @@ try {
   check('chess: 待ったで成績は消えない', K.getRecord().w === 1, cels.record.textContent);
   K.clickSquare(31); K.clickSquare(13); // もう一度 Qxf7#
   check('chess: もう一度勝つと2勝になる', K.getRecord().w === 2 && cels.record.textContent === '2勝 0敗 0分', cels.record.textContent);
+  const pgnMate = K.getPgnText();
+  check('chess: 勝ったPGNのResultは 1-0', pgnMate.includes('[Result "1-0"]') && pgnMate.trimEnd().endsWith('1. Qxf7# 1-0'), pgnMate);
+  const downloaded = K.downloadPgn();
+  check('chess: PGN保存はPGNテキストを返す', downloaded === pgnMate, downloaded);
+  check('chess: PGNがBlobに渡る', createdBlob && createdBlob.parts.join('') === pgnMate && createdBlob.type === 'application/x-chess-pgn', createdBlob && createdBlob.type);
+  check('chess: PGN保存で .pgn のリンクがクリックされる', lastCreated && lastCreated.download.endsWith('.pgn') && lastCreated.href === 'blob:pgn' && lastCreated._clicked === true, lastCreated && lastCreated.download);
   K.newGame();
   check('chess: 最初からでも成績は残る', K.getRecord().w === 2 && cels.record.textContent === '2勝 0敗 0分', cels.record.textContent);
   K.loadFEN('4k3/8/8/8/8/8/4Q3/4K3 w - - 0 1');
@@ -453,6 +474,7 @@ try {
   check('chess: 成績リセットで0勝0敗0分に戻る', K.getRecord().w === 0 && K.getRecord().d === 0 && cels.record.textContent === 'まだ対局はないよ', cels.record.textContent);
   check('chess: 待ったで駒の価値が互角に戻る', cels.material.textContent === '互角', cels.material.textContent);
   check('chess: 履歴が空になると棋譜コピーがまた押せない', cels['copy-moves'].disabled === true, `disabled=${cels['copy-moves'].disabled}`);
+  check('chess: 履歴が空になるとPGN保存がまた押せない', cels['download-pgn'].disabled === true, `disabled=${cels['download-pgn'].disabled}`);
   // 音のオン／オフ切り替えと保存（最後にやる。途中の音のチェックに影響しないように）
   cels['sound-toggle'].fire('click');
   check('chess: 音をオフにできる', K.getSoundOn() === false && cels['sound-toggle'].textContent === '音：オフ', `sound=${K.getSoundOn()} label=${cels['sound-toggle'].textContent}`);
