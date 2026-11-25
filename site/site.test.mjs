@@ -423,6 +423,7 @@ try {
   check('chess: 手が無いうちはPGN保存が押せない', cels['download-pgn'].disabled === true, `disabled=${cels['download-pgn'].disabled}`);
   check('chess: 手が無いうちはPGNが空', K.getPgnText() === '' && K.downloadPgn() === '');
   check('chess: 最初は音がオン', K.getSoundOn() === true && cels['sound-toggle'].textContent === '音：オン' && K.getSoundLog().length === 0, `sound=${K.getSoundOn()} log=${K.getSoundLog().join(',')}`);
+  check('chess: 最初はAIの強さがふつう', K.getLevelIndex() === 1 && cels.level.value === '1', `level=${K.getLevelIndex()} value=${cels.level.value}`);
   K.clickSquare(52); K.clickSquare(36); // e2-e4
   check('chess: e4 のあと AI が応手する', K.getHistory().length === 2, `history=${K.getHistory().join(' ')}`);
   check('chess: e4 とAIの応手で音が2回鳴る（どちらもふつうの手）', JSON.stringify(K.getSoundLog()) === JSON.stringify(['move', 'move']), `log=${K.getSoundLog().join(',')}`);
@@ -475,6 +476,14 @@ try {
   check('chess: 待ったで駒の価値が互角に戻る', cels.material.textContent === '互角', cels.material.textContent);
   check('chess: 履歴が空になると棋譜コピーがまた押せない', cels['copy-moves'].disabled === true, `disabled=${cels['copy-moves'].disabled}`);
   check('chess: 履歴が空になるとPGN保存がまた押せない', cels['download-pgn'].disabled === true, `disabled=${cels['download-pgn'].disabled}`);
+  // AIの強さの切り替えと保存（音のチェックの前にやる。e4 の応手は強さで変わっても音の数には影響しない）
+  cels.level.value = '2';
+  cels.level.fire('change');
+  check('chess: AIの強さを「つよい」に変えられる', K.getLevelIndex() === 2, `level=${K.getLevelIndex()}`);
+  check('chess: AIの強さが localStorage に保存される', store.get('kinako-chess-level') === '2', store.get('kinako-chess-level'));
+  cels.level.value = '0';
+  cels.level.fire('change');
+  check('chess: AIの強さを「やさしい」に変えられる', K.getLevelIndex() === 0 && store.get('kinako-chess-level') === '0', `level=${K.getLevelIndex()}`);
   // 音のオン／オフ切り替えと保存（最後にやる。途中の音のチェックに影響しないように）
   cels['sound-toggle'].fire('click');
   check('chess: 音をオフにできる', K.getSoundOn() === false && cels['sound-toggle'].textContent === '音：オフ', `sound=${K.getSoundOn()} label=${cels['sound-toggle'].textContent}`);
@@ -488,6 +497,7 @@ try {
   check('chess: 音をオンに戻せる', K.getSoundOn() === true && cels['sound-toggle'].textContent === '音：オン' && store.get('kinako-chess-sound') === 'on', `sound=${K.getSoundOn()}`);
   // 別タブ（新しい実行）でもオフが読み込まれる：共有の store に 'off' を入れて読み直す
   store.set('kinako-chess-sound', 'off');
+  store.set('kinako-chess-level', '2');
   const cels2 = Object.fromEntries(cids.map(id => [id, chessEl(id)]));
   const csb2 = {
     document: { getElementById: id => cels2[id] || null, createElement: () => chessEl('') },
@@ -502,6 +512,7 @@ try {
   vm.runInContext(readFileSync(chessEnginePath, 'utf8'), csb2, { filename: 'chess-engine.js' });
   vm.runInContext(readFileSync(chessJsPath, 'utf8'), csb2, { filename: 'chess.js' });
   check('chess: 保存されたオフが次回起動時も読まれる', csb2.KinakoChess.getSoundOn() === false && cels2['sound-toggle'].textContent === '音：オフ', `sound=${csb2.KinakoChess.getSoundOn()}`);
+  check('chess: 保存された「つよい」が次回起動時も読まれる', csb2.KinakoChess.getLevelIndex() === 2 && cels2.level.value === '2', `level=${csb2.KinakoChess.getLevelIndex()} value=${cels2.level.value}`);
 } catch (e) {
   check('chess.js: スタブ対局の確認', false, String(e && e.stack || e));
 }

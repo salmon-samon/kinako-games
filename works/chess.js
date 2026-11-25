@@ -91,11 +91,26 @@
   }
   function renderSound() {
     if (soundBtn) soundBtn.textContent = soundOn ? '音：オン' : '音：オフ';
-  }
-  function toggleSound() {
+  }  function toggleSound() {
     soundOn = !soundOn;
     saveSound(soundOn);
     renderSound();
+  }
+
+  // AIの強さ：選んだものを localStorage に保存して、次に開いたときも残す（初期値は「ふつう」）。
+  var LEVEL_KEY = 'kinako-chess-level';
+  function loadLevelIndex() {
+    try {
+      if (typeof localStorage === 'undefined') return 1;
+      var i = parseInt(localStorage.getItem(LEVEL_KEY), 10);
+      if (isNaN(i) || i < 0 || i >= LEVELS.length) return 1;
+      return i;
+    } catch (e) { return 1; }
+  }
+  function saveLevelIndex(i) {
+    try {
+      if (typeof localStorage !== 'undefined') localStorage.setItem(LEVEL_KEY, String(i));
+    } catch (e) { /* 保存できない環境では切り替えだけその場で効く */ }
   }
   function tone(freq, dur, type, gain, delay) {
     if (!audioCtx) return;
@@ -574,13 +589,15 @@
   }
   if (levelEl) {
     levelEl.innerHTML = '';
+    var savedLevel = loadLevelIndex();
     LEVELS.forEach(function (lv, i) {
       var o = document.createElement('option');
       o.value = String(i);
       o.textContent = lv.name;
-      if (i === 1) o.selected = true;
+      if (i === savedLevel) o.selected = true;
       levelEl.appendChild(o);
     });
+    levelEl.value = String(savedLevel);
   }
   undoBtn.addEventListener('click', undo);
   newBtn.addEventListener('click', newGame);
@@ -588,7 +605,7 @@
   pgnBtn.addEventListener('click', downloadPgn);
   if (resetRecordBtn) resetRecordBtn.addEventListener('click', resetRecord);
   if (soundBtn) soundBtn.addEventListener('click', toggleSound);
-  if (levelEl) levelEl.addEventListener('change', function () { if (!thinking) refresh(); });
+  if (levelEl) levelEl.addEventListener('change', function () { saveLevelIndex(LEVELS.indexOf(currentLevel())); if (!thinking) refresh(); });
 
   newGame();
   renderRecord();
@@ -626,6 +643,7 @@
     resetRecord: resetRecord,
     getSoundOn: function () { return soundOn; },
     toggleSound: toggleSound,
+    getLevelIndex: function () { return LEVELS.indexOf(currentLevel()); },
     getSoundLog: function () { return soundLog.slice(); }
   };
 })();
