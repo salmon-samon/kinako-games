@@ -245,6 +245,27 @@ try {
   const tfooterEl = termEl('footer');
   tfooterEl.textContent = `${SITE_NAME} v${VERSION}`;
   const tstore = new Map([['kinako-drops', '7'], ['kinako-drops-total', '42']]);
+  // log コマンド用の fetch スタブ。ターミナルの .then 連鎖を同期でなぞるだけの簡易版。
+  const cannedLogHtml = '<ul class="log">'
+    + '<li><span class="d">2026-11-17</span>サイト開設</li>'
+    + '<li><span class="d">2026-11-18</span>グラス追加</li>'
+    + '<li><span class="d">2026-11-19</span>チェス追加</li>'
+    + '<li><span class="d">2026-11-20</span>コピーボタン</li>'
+    + '<li><span class="d">2026-11-21</span>価値の表示</li>'
+    + '<li><span class="d">2026-11-22</span>Worker化</li>'
+    + '<li><span class="d">2026-11-23</span>通算成績</li></ul>';
+  const dummyThen = { then: function () { return dummyThen; } };
+  function stubFetch(mode) {
+    const err = new Error('fetch fail');
+    if (mode === 'fail') {
+      return { then: function (ok, errFn) {
+        if (errFn) { errFn(err); return dummyThen; }
+        return { then: function (ok2, err2) { if (err2) err2(err); return dummyThen; } };
+      } };
+    }
+    const resp = { text: function () { return { then: function (ok) { ok(cannedLogHtml); return dummyThen; } }; } };
+    return { then: function (ok) { return ok ? ok(resp) : resp; } };
+  }
   const tsandbox = {
     document: {
       getElementById: id => ({ 'term-out': tout, 'term-in': tin, 'term-run': trun })[id] || null,
@@ -257,6 +278,7 @@ try {
     },
     location: {},
     setTimeout: () => 0,
+    fetch: function () { return stubFetch('ok'); },
   };
   vm.createContext(tsandbox);
   vm.runInContext(readFileSync(resolve(packDir, 'terminal.js'), 'utf8'), tsandbox, { filename: 'terminal.js' });
@@ -277,6 +299,16 @@ try {
   check('terminal: open glass-break はガラスブレイクへ移動', String(tsandbox.location.href || '').endsWith('works/glass-break.html'), `href=${tsandbox.location.href}`);
   tin.value = 'hogehoge'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
   check('terminal: 未知コマンドの案内', outText().includes('コマンドが見つからない'));
+  tin.value = 'help'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
+  check('terminal: help に log がある', outText().includes('log [all]'));
+  tin.value = 'log'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
+  check('terminal: log が最近5件を出す', outText().includes('2026-11-23 通算成績') && outText().includes('ほか 2 件'), outText());
+  check('terminal: log は古い分を出さない', !outText().includes('2026-11-17 サイト開設'), outText());
+  tin.value = 'log all'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
+  check('terminal: log all が全部出す', outText().includes('2026-11-17 サイト開設'), outText());
+  tsandbox.fetch = function () { return stubFetch('fail'); };
+  tin.value = 'log'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
+  check('terminal: log の fetch 失敗は案内', outText().includes('ログが読めない'), outText());
 } catch (e) {
   check('terminal.js: スタブ動作確認', false, String(e && e.stack || e));
 }

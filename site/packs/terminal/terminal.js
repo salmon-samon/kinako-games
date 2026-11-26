@@ -44,6 +44,7 @@
       print('  about / whoami  きなこについて');
       print('  works           作品一覧');
       print('  glass           グラスのしずく状況');
+      print('  log [all]       最近のサイトのログ（all で全部）');
       print('  open <ページ>   ページを開く (top/about/works/log/notes/terminal/chess/mizuatsume/glass-break)');
       print('  tab list        カスタムタブ一覧');
       print('  tab rm <名前>   カスタムタブを消す');
@@ -64,6 +65,20 @@
       var n = localStorage.getItem('kinako-drops') || '0';
       var total = localStorage.getItem('kinako-drops-total') || '0';
       print('グラス: いま ' + n + ' / 30 滴（累計 ' + total + ' 滴）');
+    },
+    // log.html を読んで最近のログを出す。読めない環境では log.html への案内だけ出す。
+    log: function (args) {
+      if (typeof fetch !== 'function') { print('この環境ではログが読めない（log.html を開いてみて）', 'dim'); return; }
+      fetch(ROOT + 'log.html').then(function (r) { return r.text(); }).then(function (html) {
+        var items = [];
+        var re = /<li><span class="d">([^<]*)<\/span>([\s\S]*?)<\/li>/g;
+        var m;
+        while ((m = re.exec(html))) items.push(m[1] + ' ' + m[2].replace(/<[^>]*>/g, ''));
+        if (!items.length) { print('ログが空っぽ', 'dim'); return; }
+        var show = args[0] === 'all' ? items : items.slice(-5);
+        show.forEach(function (s) { print(s); });
+        if (items.length > show.length) print('…ほか ' + (items.length - show.length) + ' 件（log all で全部）', 'dim');
+      }, function () { print('ログが読めない（log.html を開いてみて）', 'dim'); });
     },
     pack: function () { print('ターミナル拡張パック v1.0.0 — ターミナルタブと「＋ 新規タブ」ボタンを足すパック。有効化は site.config.mjs の ENABLED_PACKS。', 'ok'); },
     packs: function () { COMMANDS.pack(); },
