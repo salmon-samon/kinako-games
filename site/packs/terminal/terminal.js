@@ -45,6 +45,7 @@
       print('  works           作品一覧');
       print('  glass           グラスのしずく状況');
       print('  log [all]       最近のサイトのログ（all で全部）');
+      print('  notes           ノートの見出し一覧');
       print('  open <ページ>   ページを開く (top/about/works/log/notes/terminal/chess/mizuatsume/glass-break)');
       print('  tab list        カスタムタブ一覧');
       print('  tab rm <名前>   カスタムタブを消す');
@@ -81,6 +82,18 @@
       }, function () { print('ログが読めない（log.html を開いてみて）', 'dim'); });
     },
     pack: function () { print('ターミナル拡張パック v1.0.0 — ターミナルタブと「＋ 新規タブ」ボタンを足すパック。有効化は site.config.mjs の ENABLED_PACKS。', 'ok'); },
+    // notes.html を読んでノートの見出しを出す。読めない環境では notes.html への案内だけ出す。
+    notes: function () {
+      if (typeof fetch !== 'function') { print('この環境ではノートが読めない（notes.html を開いてみて）', 'dim'); return; }
+      fetch(ROOT + 'notes.html').then(function (r) { return r.text(); }).then(function (html) {
+        var items = [];
+        var re = /<h2>([\s\S]*?)<\/h2>/g;
+        var m;
+        while ((m = re.exec(html))) items.push(m[1].replace(/<[^>]*>/g, ''));
+        if (!items.length) { print('ノートは空っぽ', 'dim'); return; }
+        items.forEach(function (s) { print('  ' + s); });
+      }, function () { print('ノートが読めない（notes.html を開いてみて）', 'dim'); });
+    },
     packs: function () { COMMANDS.pack(); },
     date: function () { print(new Date().toString()); },
     clear: function () { out.textContent = ''; },

@@ -254,8 +254,12 @@ try {
     + '<li><span class="d">2026-11-21</span>価値の表示</li>'
     + '<li><span class="d">2026-11-22</span>Worker化</li>'
     + '<li><span class="d">2026-11-23</span>通算成績</li></ul>';
+  const cannedNotesHtml = '<h1>きなこのノート</h1>'
+    + '<h2>2026-11-18 サイトの仕組みを増やした</h2><p>あれこれ</p>'
+    + '<h2>メモ</h2><p>バージョンの話</p>'
+    + '<h2>変換できる記法</h2><p>表と引用</p>';
   const dummyThen = { then: function () { return dummyThen; } };
-  function stubFetch(mode) {
+  function stubFetch(mode, url) {
     const err = new Error('fetch fail');
     if (mode === 'fail') {
       return { then: function (ok, errFn) {
@@ -263,7 +267,8 @@ try {
         return { then: function (ok2, err2) { if (err2) err2(err); return dummyThen; } };
       } };
     }
-    const resp = { text: function () { return { then: function (ok) { ok(cannedLogHtml); return dummyThen; } }; } };
+    const body = (url && url.indexOf('notes.html') !== -1) ? cannedNotesHtml : cannedLogHtml;
+    const resp = { text: function () { return { then: function (ok) { ok(body); return dummyThen; } }; } };
     return { then: function (ok) { return ok ? ok(resp) : resp; } };
   }
   const tsandbox = {
@@ -278,7 +283,7 @@ try {
     },
     location: {},
     setTimeout: () => 0,
-    fetch: function () { return stubFetch('ok'); },
+    fetch: function (url) { return stubFetch('ok', url); },
   };
   vm.createContext(tsandbox);
   vm.runInContext(readFileSync(resolve(packDir, 'terminal.js'), 'utf8'), tsandbox, { filename: 'terminal.js' });
@@ -309,6 +314,14 @@ try {
   tsandbox.fetch = function () { return stubFetch('fail'); };
   tin.value = 'log'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
   check('terminal: log の fetch 失敗は案内', outText().includes('ログが読めない'), outText());
+  tin.value = 'help'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
+  check('terminal: help に notes がある', outText().includes('notes'));
+  tsandbox.fetch = function (url) { return stubFetch('ok', url); };
+  tin.value = 'notes'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
+  check('terminal: notes が見出しを出す', outText().includes('2026-11-18 サイトの仕組みを増やした') && outText().includes('メモ') && outText().includes('変換できる記法'), outText());
+  tsandbox.fetch = function () { return stubFetch('fail'); };
+  tin.value = 'notes'; tin.fire('keydown', { key: 'Enter', preventDefault() {} });
+  check('terminal: notes の fetch 失敗は案内', outText().includes('ノートが読めない'), outText());
 } catch (e) {
   check('terminal.js: スタブ動作確認', false, String(e && e.stack || e));
 }
